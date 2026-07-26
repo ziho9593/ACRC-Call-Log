@@ -1,0 +1,319 @@
+:root {
+  color: #1f2937;
+  background: #f5f7fb;
+  font-family:
+    Arial,
+    "Malgun Gothic",
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.page {
+  min-height: 100vh;
+}
+
+.topbar {
+  border-bottom: 1px solid #d7dde8;
+  background: #ffffff;
+}
+
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1180px;
+  min-height: 64px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+.brand {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1b2a41;
+}
+
+.nav-link {
+  color: #3b556f;
+  font-size: 14px;
+}
+
+.content {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px 28px 56px;
+}
+
+.intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 28px;
+  align-items: start;
+}
+
+.headline h1 {
+  margin: 0 0 12px;
+  color: #152033;
+  font-size: 40px;
+  line-height: 1.16;
+  letter-spacing: 0;
+}
+
+.headline p {
+  max-width: 720px;
+  margin: 0;
+  color: #526173;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.panel {
+  border: 1px solid #dce3ee;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.upload-panel {
+  padding: 22px;
+}
+
+.upload-label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.file-input {
+  width: 100%;
+  padding: 14px;
+  border: 1px dashed #9aa9ba;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.hint {
+  margin: 10px 0 18px;
+  color: #68778a;
+  font-size: 13px;
+}
+
+.primary-button {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: #1769aa;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary-button:disabled {
+  background: #8fa6ba;
+  cursor: not-allowed;
+}
+
+.message {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.message.error {
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #991b1b;
+}
+
+.message.info {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.section-title {
+  margin: 34px 0 14px;
+  color: #1b2a41;
+  font-size: 20px;
+}
+
+.call-list {
+  overflow: hidden;
+}
+
+.call-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 130px 180px;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 18px;
+  border-bottom: 1px solid #e5ebf3;
+}
+
+.call-row:last-child {
+  border-bottom: 0;
+}
+
+.call-name {
+  color: #172033;
+  font-weight: 700;
+}
+
+.call-meta {
+  margin-top: 4px;
+  color: #66758a;
+  font-size: 13px;
+}
+
+.status {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.status.UPLOADED {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.status.PROCESSING {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status.COMPLETED {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status.FAILED {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 24px;
+}
+
+.side-panel,
+.main-panel {
+  padding: 20px;
+}
+
+.audio {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.summary-block {
+  margin-bottom: 22px;
+}
+
+.summary-block h2,
+.summary-block h3 {
+  margin: 0 0 10px;
+  color: #1b2a41;
+}
+
+.summary-block p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.keyword {
+  padding: 6px 9px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+}
+
+.section-list,
+.utterance-list {
+  display: grid;
+  gap: 10px;
+}
+
+.section-item,
+.utterance-button {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #dce3ee;
+  border-radius: 8px;
+  background: #ffffff;
+  text-align: left;
+}
+
+.utterance-button {
+  cursor: pointer;
+}
+
+.utterance-button:hover {
+  border-color: #1769aa;
+  background: #f8fbff;
+}
+
+.time {
+  color: #1769aa;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.speaker {
+  margin-left: 8px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.empty {
+  padding: 22px;
+  color: #66758a;
+}
+
+@media (max-width: 900px) {
+  .intro,
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .call-row {
+    grid-template-columns: 1fr;
+  }
+}
+

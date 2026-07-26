@@ -1,0 +1,27 @@
+services:
+  api:
+    build:
+      context: ./apps/api
+    environment:
+      STT_PROVIDER: ${STT_PROVIDER:-mock}
+      ANALYSIS_PROVIDER: ${ANALYSIS_PROVIDER:-mock}
+      DATABASE_PATH: /data/acrc_call_log.db
+      UPLOAD_DIR: /data/uploads
+      PROCESSED_DIR: /data/processed
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-104857600}
+      API_CORS_ORIGINS: http://localhost:3000
+    volumes:
+      - ./storage:/data
+    ports:
+      - "8000:8000"
+
+  web:
+    build:
+      context: ./apps/web
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
