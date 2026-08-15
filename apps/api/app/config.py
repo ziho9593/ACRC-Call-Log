@@ -13,6 +13,11 @@ class Settings:
     whisper_compute_type: str
     whisper_language: str
     analysis_provider: str
+    ollama_base_url: str
+    ollama_model: str
+    ollama_timeout_seconds: float
+    ollama_context_window: int
+    ollama_max_input_chars: int
     database_path: Path
     upload_dir: Path
     processed_dir: Path
@@ -32,6 +37,11 @@ def get_settings() -> Settings:
         whisper_compute_type=os.getenv("WHISPER_COMPUTE_TYPE", "int8"),
         whisper_language=os.getenv("WHISPER_LANGUAGE", "ko"),
         analysis_provider=os.getenv("ANALYSIS_PROVIDER", "mock"),
+        ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
+        ollama_model=os.getenv("OLLAMA_MODEL", "qwen3.5:4b"),
+        ollama_timeout_seconds=float(os.getenv("OLLAMA_TIMEOUT_SECONDS", "180")),
+        ollama_context_window=int(os.getenv("OLLAMA_CONTEXT_WINDOW", "32768")),
+        ollama_max_input_chars=int(os.getenv("OLLAMA_MAX_INPUT_CHARS", "40000")),
         database_path=Path(os.getenv("DATABASE_PATH", "storage/acrc_call_log.db")),
         upload_dir=Path(os.getenv("UPLOAD_DIR", "storage/uploads")),
         processed_dir=Path(os.getenv("PROCESSED_DIR", "storage/processed")),

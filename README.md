@@ -45,6 +45,11 @@ ACRC-Call-Log/
 - `WHISPER_COMPUTE_TYPE`: 기본값 `int8` (GPU에서는 일반적으로 `float16`)
 - `WHISPER_LANGUAGE`: 기본값 `ko`
 - `ANALYSIS_PROVIDER`: 기본값 `mock`
+- `OLLAMA_BASE_URL`: 로컬 Ollama API 주소
+- `OLLAMA_MODEL`: 분석 모델, 기본값 `qwen3.5:4b`
+- `OLLAMA_TIMEOUT_SECONDS`: 모델 분석 제한 시간, 기본값 180초
+- `OLLAMA_CONTEXT_WINDOW`: 모델 컨텍스트 크기, 기본값 32768
+- `OLLAMA_MAX_INPUT_CHARS`: 한 번에 분석할 최대 전사문 길이, 기본값 40000자
 - `DATABASE_PATH`: SQLite 파일 경로
 - `UPLOAD_DIR`: 업로드 파일 저장 경로
 - `PROCESSED_DIR`: 처리 산출물 저장 경로
@@ -148,6 +153,25 @@ docker compose up --build
 Provider는 로컬 모델만 허용하므로 실행 중 모델을 자동으로 다운로드하거나 외부 STT API를 호출하지 않습니다. Whisper 자체에는 화자 분리 기능이 없어서 실제 전사 구간의 화자는 모두 `화자`로 저장됩니다.
 
 `ANALYSIS_PROVIDER=local`은 외부 LLM 없이 실제 전사문에서 대표 문장, 주요 키워드, 최대 3개의 구간별 요약을 추출합니다. 생성형 요약이 아닌 추출형 PoC이므로 결과 문장은 원문 전사 구간을 그대로 사용합니다.
+
+## 로컬 Ollama 분석 사용 방법
+
+Ollama를 설치한 뒤 로컬 분석 모델을 한 번 다운로드합니다.
+
+```bash
+ollama pull qwen3.5:4b
+```
+
+API를 실행할 때 Ollama 분석 Provider를 선택합니다.
+
+```bash
+export ANALYSIS_PROVIDER=ollama
+export OLLAMA_BASE_URL=http://127.0.0.1:11434
+export OLLAMA_MODEL=qwen3.5:4b
+python -m uvicorn app.main:app --reload
+```
+
+Ollama Provider는 전사문을 로컬 Ollama API에만 전달하고 JSON Schema로 결과 형식을 검증합니다. 긴 전사문은 자동으로 나누어 분석하며, Ollama 연결이나 응답 검증이 실패하면 기존 `local` 추출형 분석으로 전환합니다. 전사 전문과 모델 응답은 로그에 남기지 않습니다.
 
 ## Mock Provider 사용 방법
 

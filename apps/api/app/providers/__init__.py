@@ -7,6 +7,7 @@ from .base import CallAnalysisProvider, SpeechToTextProvider
 from .faster_whisper import FasterWhisperSpeechToTextProvider
 from .local_analysis import LocalExtractiveCallAnalysisProvider
 from .mock import MockCallAnalysisProvider, MockSpeechToTextProvider
+from .ollama_analysis import OllamaCallAnalysisProvider
 
 
 @cache
@@ -31,9 +32,25 @@ def get_stt_provider(
     raise ValueError(f"지원하지 않는 STT_PROVIDER입니다: {name}")
 
 
-def get_analysis_provider(name: str) -> CallAnalysisProvider:
+@cache
+def get_analysis_provider(
+    name: str,
+    base_url: str = "http://127.0.0.1:11434",
+    model: str = "qwen3.5:4b",
+    timeout_seconds: float = 180,
+    context_window: int = 32768,
+    max_input_chars: int = 40000,
+) -> CallAnalysisProvider:
     if name == "mock":
         return MockCallAnalysisProvider()
     if name == "local":
         return LocalExtractiveCallAnalysisProvider()
+    if name == "ollama":
+        return OllamaCallAnalysisProvider(
+            base_url=base_url,
+            model=model,
+            timeout_seconds=timeout_seconds,
+            context_window=context_window,
+            max_input_chars=max_input_chars,
+        )
     raise ValueError(f"지원하지 않는 ANALYSIS_PROVIDER입니다: {name}")

@@ -60,7 +60,14 @@ def process_call(call_id: str) -> None:
         if probed_duration:
             transcript = type(transcript)(probed_duration, transcript.utterances)
 
-        analysis = get_analysis_provider(settings.analysis_provider).analyze(transcript)
+        analysis = get_analysis_provider(
+            settings.analysis_provider,
+            settings.ollama_base_url,
+            settings.ollama_model,
+            settings.ollama_timeout_seconds,
+            settings.ollama_context_window,
+            settings.ollama_max_input_chars,
+        ).analyze(transcript)
         db.save_analysis(call_id, transcript, analysis)
     except Exception:
         db.update_status(call_id, "FAILED", "분석 처리 중 오류가 발생했습니다.")
