@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .base import CallAnalysisProvider, SpeechToTextProvider
 from .faster_whisper import FasterWhisperSpeechToTextProvider
+from .local_analysis import LocalExtractiveCallAnalysisProvider
 from .mock import MockCallAnalysisProvider, MockSpeechToTextProvider
 
 
@@ -33,4 +34,6 @@ def get_stt_provider(
 def get_analysis_provider(name: str) -> CallAnalysisProvider:
     if name == "mock":
         return MockCallAnalysisProvider()
+    if name == "local":
+        return LocalExtractiveCallAnalysisProvider()
     raise ValueError(f"지원하지 않는 ANALYSIS_PROVIDER입니다: {name}")

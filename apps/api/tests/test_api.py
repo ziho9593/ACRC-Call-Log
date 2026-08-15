@@ -43,6 +43,13 @@ def test_health_api(client: TestClient) -> None:
     assert response.json() == {"status": "ok"}
 
 
+@pytest.mark.parametrize("origin", ["http://localhost:3000", "http://127.0.0.1:3000"])
+def test_local_frontend_origins_are_allowed(client: TestClient, origin: str) -> None:
+    response = client.get("/api/v1/health", headers={"Origin": origin})
+
+    assert response.headers["access-control-allow-origin"] == origin
+
+
 def test_upload_audio_file(client: TestClient) -> None:
     body = upload_sample(client)
     assert body["originalFilename"] == "sample-call.mp3"

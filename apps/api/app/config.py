@@ -21,7 +21,10 @@ class Settings:
 
 
 def get_settings() -> Settings:
-    origins = os.getenv("API_CORS_ORIGINS", "http://localhost:3000")
+    origins = os.getenv(
+        "API_CORS_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000",
+    )
     return Settings(
         stt_provider=os.getenv("STT_PROVIDER", "mock"),
         whisper_model_path=Path(os.getenv("WHISPER_MODEL_PATH", "storage/models/whisper-small")),
