@@ -8,7 +8,7 @@
 4. API는 UUID 기반 내부 파일명을 생성해 `UPLOAD_DIR`에 저장하고 `call_records`에 `UPLOADED` 상태를 기록한다.
 5. 응답은 즉시 반환되고, FastAPI background task가 분석을 시작한다.
 6. background task는 상태를 `PROCESSING`으로 바꾸고 `SpeechToTextProvider`를 호출한다.
-7. Mock STT Provider는 타임스탬프와 화자가 포함된 한국어 샘플 전사 결과를 반환한다.
+7. 선택한 STT Provider가 전사 결과를 반환한다. Mock은 한국어 샘플을, faster-whisper는 로컬 모델의 타임스탬프 전사를 반환한다.
 8. `CallAnalysisProvider`는 전체 요약, 키워드, 구간별 요약을 생성한다.
 9. API는 `utterances`, `call_sections`, `call_records` 분석 결과를 SQLite에 저장하고 상태를 `COMPLETED`로 변경한다.
 10. 오류가 발생하면 전사문이나 녹취 내용을 로그에 남기지 않고 `FAILED` 상태와 사용자용 오류 메시지만 저장한다.

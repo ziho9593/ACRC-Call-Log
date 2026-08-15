@@ -14,5 +14,7 @@ coverage/
 dist/
 storage/uploads/*
 storage/processed/*
+storage/models/*
 !storage/uploads/.gitkeep
 !storage/processed/.gitkeep
+!storage/models/.gitkeep

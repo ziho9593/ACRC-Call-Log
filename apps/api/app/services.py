@@ -49,7 +49,13 @@ def process_call(call_id: str) -> None:
         if row["original_filename"].lower().startswith("fail"):
             stt_path = f"{audio_path}-force-fail"
 
-        transcript = get_stt_provider(settings.stt_provider).transcribe(stt_path)
+        transcript = get_stt_provider(
+            settings.stt_provider,
+            settings.whisper_model_path,
+            settings.whisper_device,
+            settings.whisper_compute_type,
+            settings.whisper_language,
+        ).transcribe(stt_path)
         probed_duration = probe_duration_ms(audio_path)
         if probed_duration:
             transcript = type(transcript)(probed_duration, transcript.utterances)

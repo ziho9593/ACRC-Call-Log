@@ -23,7 +23,8 @@ ACRC-Call-Log/
 │  └─ architecture.md
 ├─ storage/
 │  ├─ uploads/
-│  └─ processed/
+│  ├─ processed/
+│  └─ models/
 ├─ docker-compose.yml
 ├─ .env.example
 └─ README.md
@@ -39,6 +40,10 @@ ACRC-Call-Log/
 `.env.example`을 참고해 `.env`를 만들 수 있습니다. 기본값은 Mock Provider입니다.
 
 - `STT_PROVIDER`: 기본값 `mock`
+- `WHISPER_MODEL_PATH`: 로컬 CTranslate2 Whisper 모델 디렉터리
+- `WHISPER_DEVICE`: 기본값 `cpu` (`cuda` 사용 가능)
+- `WHISPER_COMPUTE_TYPE`: 기본값 `int8` (GPU에서는 일반적으로 `float16`)
+- `WHISPER_LANGUAGE`: 기본값 `ko`
 - `ANALYSIS_PROVIDER`: 기본값 `mock`
 - `DATABASE_PATH`: SQLite 파일 경로
 - `UPLOAD_DIR`: 업로드 파일 저장 경로
@@ -103,6 +108,44 @@ Docker Compose 설정 검증:
 docker compose config
 ```
 
+## 로컬 faster-whisper 사용 방법
+
+`small` 모델을 `storage/models/whisper-small`에 한 번 다운로드합니다. 모델 파일은 Git에 포함되지 않습니다.
+
+```bash
+cd apps/api
+. .venv/Scripts/activate
+python -c "from faster_whisper.utils import download_model; download_model('small', output_dir='../../storage/models/whisper-small')"
+```
+
+로컬 API를 실행할 때 다음 환경 변수를 지정합니다.
+
+```bash
+export STT_PROVIDER=faster-whisper
+export WHISPER_MODEL_PATH=../../storage/models/whisper-small
+export WHISPER_DEVICE=cpu
+export WHISPER_COMPUTE_TYPE=int8
+export WHISPER_LANGUAGE=ko
+uvicorn app.main:app --reload
+```
+
+Docker Compose에서는 프로젝트 루트의 `.env`를 다음과 같이 설정한 뒤 실행합니다. 모델 디렉터리는 컨테이너의 `/models`에 읽기 전용으로 마운트됩니다.
+
+```dotenv
+STT_PROVIDER=faster-whisper
+WHISPER_MODEL_PATH=/models/whisper-small
+WHISPER_DEVICE=cpu
+WHISPER_COMPUTE_TYPE=int8
+WHISPER_LANGUAGE=ko
+ANALYSIS_PROVIDER=mock
+```
+
+```bash
+docker compose up --build
+```
+
+Provider는 로컬 모델만 허용하므로 실행 중 모델을 자동으로 다운로드하거나 외부 STT API를 호출하지 않습니다. Whisper 자체에는 화자 분리 기능이 없어서 실제 전사 구간의 화자는 모두 `화자`로 저장됩니다.
+
 ## Mock Provider 사용 방법
 
 기본 설정인 `STT_PROVIDER=mock`, `ANALYSIS_PROVIDER=mock` 상태에서는 외부 API 키 없이 업로드부터 분석 완료까지 동작합니다. 업로드된 파일의 실제 음성 내용은 읽지 않고, 한국어 상담 통화 샘플 전사와 요약을 반환합니다. 파일명이 `fail`로 시작하면 PoC 테스트를 위해 실패 상태가 저장됩니다.
@@ -118,7 +161,7 @@ docker compose config
 ## 알려진 PoC 한계
 
 - 사용자 인증과 권한 관리가 없습니다.
-- Mock Provider는 실제 음성 내용을 전사하지 않습니다.
+- Mock Provider는 실제 음성 내용을 전사하지 않습니다. faster-whisper Provider를 선택하면 로컬 모델로 전사할 수 있습니다.
 - 고급 화자 분리, 전사문 편집, 전체 텍스트 검색, 통계 대시보드는 없습니다.
 - 장기 보관 정책, 감사 로그, 자동 개인정보 마스킹은 구현하지 않았습니다.
 

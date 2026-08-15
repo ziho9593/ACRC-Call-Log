@@ -4,6 +4,10 @@ services:
       context: ./apps/api
     environment:
       STT_PROVIDER: ${STT_PROVIDER:-mock}
+      WHISPER_MODEL_PATH: ${WHISPER_MODEL_PATH:-/models/whisper-small}
+      WHISPER_DEVICE: ${WHISPER_DEVICE:-cpu}
+      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE:-int8}
+      WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-ko}
       ANALYSIS_PROVIDER: ${ANALYSIS_PROVIDER:-mock}
       DATABASE_PATH: /data/acrc_call_log.db
       UPLOAD_DIR: /data/uploads
@@ -12,6 +16,7 @@ services:
       API_CORS_ORIGINS: http://localhost:3000
     volumes:
       - ./storage:/data
+      - ./storage/models:/models:ro
     ports:
       - "8000:8000"
 
