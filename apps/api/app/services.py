@@ -106,6 +106,10 @@ def process_call(call_id: str) -> None:
             settings.whisper_vad_threshold,
             settings.whisper_min_silence_duration_ms,
             settings.whisper_speech_pad_ms,
+            settings.whisper_no_speech_threshold,
+            settings.whisper_log_prob_threshold,
+            settings.whisper_compression_ratio_threshold,
+            settings.whisper_hallucination_silence_threshold,
         ).transcribe(stt_path)
         probed_duration = probe_duration_ms(audio_path)
         if probed_duration:

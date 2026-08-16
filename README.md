@@ -45,10 +45,13 @@ ACRC-Call-Log/
 - `WHISPER_COMPUTE_TYPE`: 기본값 `int8` (GPU에서는 일반적으로 `float16`)
 - `WHISPER_LANGUAGE`: 기본값 `ko`
 - `WHISPER_PREPROCESS_AUDIO`: FFmpeg 노이즈 제거·음량 정규화 사용 여부
-- `WHISPER_INITIAL_PROMPT`: 전사 문맥을 제공하는 한국어 프롬프트
-- `WHISPER_HOTWORDS`: 정확도를 높일 민원·기관 용어
+- `WHISPER_INITIAL_PROMPT`: 선택적 전사 문맥. 기본값은 비어 있으며 잘못 지정하면 문구가 전사문에 섞일 수 있음
+- `WHISPER_HOTWORDS`: 선택적 전문 용어. 기본값은 비어 있음
 - `WHISPER_CONDITION_ON_PREVIOUS_TEXT`: 이전 구간 오류의 반복 전파 여부
-- `WHISPER_VAD_THRESHOLD`: 음성 감지 민감도, 기본값 `0.35`
+- `WHISPER_VAD_THRESHOLD`: 음성 감지 민감도, 기본값 `0.5`
+- `WHISPER_NO_SPEECH_THRESHOLD`: 비음성 구간 제외 기준, 기본값 `0.5`
+- `WHISPER_LOG_PROB_THRESHOLD`: 낮은 신뢰도 결과 제한, 기본값 `-0.8`
+- `WHISPER_HALLUCINATION_SILENCE_THRESHOLD`: 긴 무음 주변 환각 제한, 기본값 `1.0`
 - `ANALYSIS_PROVIDER`: 기본값 `mock`
 - `OLLAMA_BASE_URL`: 로컬 Ollama API 주소
 - `OLLAMA_MODEL`: 분석 모델, 기본값 `qwen3.5:4b`
@@ -138,7 +141,9 @@ export WHISPER_COMPUTE_TYPE=int8
 export WHISPER_LANGUAGE=ko
 export WHISPER_PREPROCESS_AUDIO=true
 export WHISPER_CONDITION_ON_PREVIOUS_TEXT=false
-export WHISPER_VAD_THRESHOLD=0.35
+export WHISPER_INITIAL_PROMPT=
+export WHISPER_HOTWORDS=
+export WHISPER_VAD_THRESHOLD=0.5
 export ANALYSIS_PROVIDER=ollama
 uvicorn app.main:app --reload
 ```
@@ -153,7 +158,9 @@ WHISPER_COMPUTE_TYPE=int8
 WHISPER_LANGUAGE=ko
 WHISPER_PREPROCESS_AUDIO=true
 WHISPER_CONDITION_ON_PREVIOUS_TEXT=false
-WHISPER_VAD_THRESHOLD=0.35
+WHISPER_INITIAL_PROMPT=
+WHISPER_HOTWORDS=
+WHISPER_VAD_THRESHOLD=0.5
 ANALYSIS_PROVIDER=ollama
 ```
 
@@ -161,7 +168,7 @@ ANALYSIS_PROVIDER=ollama
 docker compose up --build
 ```
 
-Provider는 로컬 모델만 허용하므로 실행 중 모델을 자동으로 다운로드하거나 외부 STT API를 호출하지 않습니다. 전사 전에 임시 16kHz mono WAV를 만들고 고역·저역 필터, 노이즈 감소, 음량 정규화를 적용하며 전사가 끝나면 즉시 삭제합니다. 전처리가 실패하면 원본 오디오로 계속 전사합니다. Whisper 자체에는 화자 분리 기능이 없어서 실제 전사 구간의 화자는 모두 `화자`로 저장됩니다.
+Provider는 로컬 모델만 허용하므로 실행 중 모델을 자동으로 다운로드하거나 외부 STT API를 호출하지 않습니다. 전사 전에 임시 16kHz mono WAV를 만들고 고역·저역 필터, 노이즈 감소, 음량 정규화를 적용하며 전사가 끝나면 즉시 삭제합니다. 전처리가 실패하면 원본 오디오로 계속 전사합니다. 기본 prompt와 hotwords는 환각 방지를 위해 비워 두며, 명백한 자막·광고 안내 환각은 저장 전에 제외합니다. Whisper 자체에는 화자 분리 기능이 없어서 실제 전사 구간의 화자는 모두 `화자`로 저장됩니다.
 
 `ANALYSIS_PROVIDER=local`은 외부 LLM 없이 실제 전사문에서 대표 문장, 주요 키워드, 최대 3개의 구간별 요약을 추출합니다. 생성형 요약이 아닌 추출형 PoC이므로 결과 문장은 원문 전사 구간을 그대로 사용합니다.
 

@@ -20,9 +20,13 @@ def get_stt_provider(
     initial_prompt: str = "",
     hotwords: str = "",
     condition_on_previous_text: bool = False,
-    vad_threshold: float = 0.35,
-    min_silence_duration_ms: int = 500,
-    speech_pad_ms: int = 400,
+    vad_threshold: float = 0.5,
+    min_silence_duration_ms: int = 700,
+    speech_pad_ms: int = 200,
+    no_speech_threshold: float = 0.5,
+    log_prob_threshold: float = -0.8,
+    compression_ratio_threshold: float = 2.2,
+    hallucination_silence_threshold: float = 1.0,
 ) -> SpeechToTextProvider:
     if name == "mock":
         return MockSpeechToTextProvider()
@@ -40,6 +44,10 @@ def get_stt_provider(
             vad_threshold=vad_threshold,
             min_silence_duration_ms=min_silence_duration_ms,
             speech_pad_ms=speech_pad_ms,
+            no_speech_threshold=no_speech_threshold,
+            log_prob_threshold=log_prob_threshold,
+            compression_ratio_threshold=compression_ratio_threshold,
+            hallucination_silence_threshold=hallucination_silence_threshold,
         )
     raise ValueError(f"지원하지 않는 STT_PROVIDER입니다: {name}")
 

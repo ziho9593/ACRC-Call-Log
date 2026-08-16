@@ -19,6 +19,10 @@ class Settings:
     whisper_vad_threshold: float
     whisper_min_silence_duration_ms: int
     whisper_speech_pad_ms: int
+    whisper_no_speech_threshold: float
+    whisper_log_prob_threshold: float
+    whisper_compression_ratio_threshold: float
+    whisper_hallucination_silence_threshold: float
     analysis_provider: str
     ollama_base_url: str
     ollama_model: str
@@ -45,22 +49,23 @@ def get_settings() -> Settings:
         whisper_language=os.getenv("WHISPER_LANGUAGE", "ko"),
         whisper_preprocess_audio=os.getenv("WHISPER_PREPROCESS_AUDIO", "true").lower()
         in {"1", "true", "yes", "on"},
-        whisper_initial_prompt=os.getenv(
-            "WHISPER_INITIAL_PROMPT",
-            "국민권익위원회 상담 통화입니다. 민원, 접수번호, 담당 부서, "
-            "처리 상태를 정확히 전사하세요.",
-        ),
-        whisper_hotwords=os.getenv(
-            "WHISPER_HOTWORDS",
-            "국민권익위원회, 민원, 접수번호, 담당 부서, 처리 상태, 상담원",
-        ),
+        whisper_initial_prompt=os.getenv("WHISPER_INITIAL_PROMPT", ""),
+        whisper_hotwords=os.getenv("WHISPER_HOTWORDS", ""),
         whisper_condition_on_previous_text=os.getenv(
             "WHISPER_CONDITION_ON_PREVIOUS_TEXT", "false"
         ).lower()
         in {"1", "true", "yes", "on"},
-        whisper_vad_threshold=float(os.getenv("WHISPER_VAD_THRESHOLD", "0.35")),
-        whisper_min_silence_duration_ms=int(os.getenv("WHISPER_MIN_SILENCE_DURATION_MS", "500")),
-        whisper_speech_pad_ms=int(os.getenv("WHISPER_SPEECH_PAD_MS", "400")),
+        whisper_vad_threshold=float(os.getenv("WHISPER_VAD_THRESHOLD", "0.5")),
+        whisper_min_silence_duration_ms=int(os.getenv("WHISPER_MIN_SILENCE_DURATION_MS", "700")),
+        whisper_speech_pad_ms=int(os.getenv("WHISPER_SPEECH_PAD_MS", "200")),
+        whisper_no_speech_threshold=float(os.getenv("WHISPER_NO_SPEECH_THRESHOLD", "0.5")),
+        whisper_log_prob_threshold=float(os.getenv("WHISPER_LOG_PROB_THRESHOLD", "-0.8")),
+        whisper_compression_ratio_threshold=float(
+            os.getenv("WHISPER_COMPRESSION_RATIO_THRESHOLD", "2.2")
+        ),
+        whisper_hallucination_silence_threshold=float(
+            os.getenv("WHISPER_HALLUCINATION_SILENCE_THRESHOLD", "1.0")
+        ),
         analysis_provider=os.getenv("ANALYSIS_PROVIDER", "mock"),
         ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
         ollama_model=os.getenv("OLLAMA_MODEL", "qwen3.5:4b"),

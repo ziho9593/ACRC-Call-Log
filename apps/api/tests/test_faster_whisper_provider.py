@@ -25,6 +25,8 @@ class FakeWhisperModel:
                 SimpleNamespace(start=0.25, end=1.5, text=" 첫 번째 문장 "),
                 SimpleNamespace(start=1.5, end=2.0, text="   "),
                 SimpleNamespace(start=2.0, end=3.75, text="두 번째 문장"),
+                SimpleNamespace(start=3.75, end=4.0, text="자막 제공 및 광고를 포함합니다."),
+                SimpleNamespace(start=4.0, end=4.5, text="처리 상태를 정확히 전사하세요."),
             ]
         )
         return segments, SimpleNamespace(duration=4.0)
@@ -57,13 +59,18 @@ def test_transcribe_converts_whisper_segments(tmp_path: Path) -> None:
         "beam_size": 5,
         "vad_filter": True,
         "vad_parameters": {
-            "threshold": 0.35,
-            "min_silence_duration_ms": 500,
-            "speech_pad_ms": 400,
+            "threshold": 0.5,
+            "min_silence_duration_ms": 700,
+            "speech_pad_ms": 200,
         },
         "initial_prompt": "민원 상담 통화",
         "hotwords": "민원, 접수번호",
         "condition_on_previous_text": False,
+        "no_speech_threshold": 0.5,
+        "log_prob_threshold": -0.8,
+        "compression_ratio_threshold": 2.2,
+        "hallucination_silence_threshold": 1.0,
+        "word_timestamps": True,
     }
     assert result.duration_ms == 4000
     assert [utterance.text for utterance in result.utterances] == [
