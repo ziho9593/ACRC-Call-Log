@@ -44,6 +44,11 @@ ACRC-Call-Log/
 - `WHISPER_DEVICE`: 기본값 `cpu` (`cuda` 사용 가능)
 - `WHISPER_COMPUTE_TYPE`: 기본값 `int8` (GPU에서는 일반적으로 `float16`)
 - `WHISPER_LANGUAGE`: 기본값 `ko`
+- `WHISPER_PREPROCESS_AUDIO`: FFmpeg 노이즈 제거·음량 정규화 사용 여부
+- `WHISPER_INITIAL_PROMPT`: 전사 문맥을 제공하는 한국어 프롬프트
+- `WHISPER_HOTWORDS`: 정확도를 높일 민원·기관 용어
+- `WHISPER_CONDITION_ON_PREVIOUS_TEXT`: 이전 구간 오류의 반복 전파 여부
+- `WHISPER_VAD_THRESHOLD`: 음성 감지 민감도, 기본값 `0.35`
 - `ANALYSIS_PROVIDER`: 기본값 `mock`
 - `OLLAMA_BASE_URL`: 로컬 Ollama API 주소
 - `OLLAMA_MODEL`: 분석 모델, 기본값 `qwen3.5:4b`
@@ -115,23 +120,26 @@ docker compose config
 
 ## 로컬 faster-whisper 사용 방법
 
-`small` 모델을 `storage/models/whisper-small`에 한 번 다운로드합니다. 모델 파일은 Git에 포함되지 않습니다.
+정확도 우선 설정은 `large-v3` 모델을 `storage/models/whisper-large-v3`에 한 번 다운로드합니다. 모델 파일은 Git에 포함되지 않습니다.
 
 ```bash
 cd apps/api
 . .venv/Scripts/activate
-python -c "from faster_whisper.utils import download_model; download_model('small', output_dir='../../storage/models/whisper-small')"
+python -c "from faster_whisper.utils import download_model; download_model('large-v3', output_dir='../../storage/models/whisper-large-v3')"
 ```
 
 로컬 API를 실행할 때 다음 환경 변수를 지정합니다.
 
 ```bash
 export STT_PROVIDER=faster-whisper
-export WHISPER_MODEL_PATH=../../storage/models/whisper-small
+export WHISPER_MODEL_PATH=../../storage/models/whisper-large-v3
 export WHISPER_DEVICE=cpu
 export WHISPER_COMPUTE_TYPE=int8
 export WHISPER_LANGUAGE=ko
-export ANALYSIS_PROVIDER=local
+export WHISPER_PREPROCESS_AUDIO=true
+export WHISPER_CONDITION_ON_PREVIOUS_TEXT=false
+export WHISPER_VAD_THRESHOLD=0.35
+export ANALYSIS_PROVIDER=ollama
 uvicorn app.main:app --reload
 ```
 
@@ -139,18 +147,21 @@ Docker Compose에서는 프로젝트 루트의 `.env`를 다음과 같이 설정
 
 ```dotenv
 STT_PROVIDER=faster-whisper
-WHISPER_MODEL_PATH=/models/whisper-small
+WHISPER_MODEL_PATH=/models/whisper-large-v3
 WHISPER_DEVICE=cpu
 WHISPER_COMPUTE_TYPE=int8
 WHISPER_LANGUAGE=ko
-ANALYSIS_PROVIDER=local
+WHISPER_PREPROCESS_AUDIO=true
+WHISPER_CONDITION_ON_PREVIOUS_TEXT=false
+WHISPER_VAD_THRESHOLD=0.35
+ANALYSIS_PROVIDER=ollama
 ```
 
 ```bash
 docker compose up --build
 ```
 
-Provider는 로컬 모델만 허용하므로 실행 중 모델을 자동으로 다운로드하거나 외부 STT API를 호출하지 않습니다. Whisper 자체에는 화자 분리 기능이 없어서 실제 전사 구간의 화자는 모두 `화자`로 저장됩니다.
+Provider는 로컬 모델만 허용하므로 실행 중 모델을 자동으로 다운로드하거나 외부 STT API를 호출하지 않습니다. 전사 전에 임시 16kHz mono WAV를 만들고 고역·저역 필터, 노이즈 감소, 음량 정규화를 적용하며 전사가 끝나면 즉시 삭제합니다. 전처리가 실패하면 원본 오디오로 계속 전사합니다. Whisper 자체에는 화자 분리 기능이 없어서 실제 전사 구간의 화자는 모두 `화자`로 저장됩니다.
 
 `ANALYSIS_PROVIDER=local`은 외부 LLM 없이 실제 전사문에서 대표 문장, 주요 키워드, 최대 3개의 구간별 요약을 추출합니다. 생성형 요약이 아닌 추출형 PoC이므로 결과 문장은 원문 전사 구간을 그대로 사용합니다.
 

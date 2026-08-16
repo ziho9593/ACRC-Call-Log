@@ -17,6 +17,12 @@ def get_stt_provider(
     device: str = "cpu",
     compute_type: str = "int8",
     language: str = "ko",
+    initial_prompt: str = "",
+    hotwords: str = "",
+    condition_on_previous_text: bool = False,
+    vad_threshold: float = 0.35,
+    min_silence_duration_ms: int = 500,
+    speech_pad_ms: int = 400,
 ) -> SpeechToTextProvider:
     if name == "mock":
         return MockSpeechToTextProvider()
@@ -28,6 +34,12 @@ def get_stt_provider(
             device=device,
             compute_type=compute_type,
             language=language,
+            initial_prompt=initial_prompt,
+            hotwords=hotwords,
+            condition_on_previous_text=condition_on_previous_text,
+            vad_threshold=vad_threshold,
+            min_silence_duration_ms=min_silence_duration_ms,
+            speech_pad_ms=speech_pad_ms,
         )
     raise ValueError(f"지원하지 않는 STT_PROVIDER입니다: {name}")
 

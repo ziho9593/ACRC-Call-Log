@@ -16,6 +16,12 @@ class FasterWhisperSpeechToTextProvider(SpeechToTextProvider):
         device: str = "cpu",
         compute_type: str = "int8",
         language: str = "ko",
+        initial_prompt: str | None = None,
+        hotwords: str | None = None,
+        condition_on_previous_text: bool = False,
+        vad_threshold: float = 0.35,
+        min_silence_duration_ms: int = 500,
+        speech_pad_ms: int = 400,
         model_factory: ModelFactory | None = None,
     ) -> None:
         if not model_path.is_dir():
@@ -27,6 +33,14 @@ class FasterWhisperSpeechToTextProvider(SpeechToTextProvider):
             model_factory = WhisperModel
 
         self._language = language
+        self._initial_prompt = initial_prompt or None
+        self._hotwords = hotwords or None
+        self._condition_on_previous_text = condition_on_previous_text
+        self._vad_parameters = {
+            "threshold": vad_threshold,
+            "min_silence_duration_ms": min_silence_duration_ms,
+            "speech_pad_ms": speech_pad_ms,
+        }
         self._model = model_factory(
             str(model_path),
             device=device,
@@ -40,6 +54,10 @@ class FasterWhisperSpeechToTextProvider(SpeechToTextProvider):
             language=self._language,
             beam_size=5,
             vad_filter=True,
+            vad_parameters=self._vad_parameters,
+            initial_prompt=self._initial_prompt,
+            hotwords=self._hotwords,
+            condition_on_previous_text=self._condition_on_previous_text,
         )
 
         utterances: list[TranscriptUtterance] = []

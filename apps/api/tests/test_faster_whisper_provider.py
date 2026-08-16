@@ -38,6 +38,8 @@ def test_transcribe_converts_whisper_segments(tmp_path: Path) -> None:
         device="cpu",
         compute_type="int8",
         language="ko",
+        initial_prompt="민원 상담 통화",
+        hotwords="민원, 접수번호",
         model_factory=FakeWhisperModel,
     )
 
@@ -54,6 +56,14 @@ def test_transcribe_converts_whisper_segments(tmp_path: Path) -> None:
         "language": "ko",
         "beam_size": 5,
         "vad_filter": True,
+        "vad_parameters": {
+            "threshold": 0.35,
+            "min_silence_duration_ms": 500,
+            "speech_pad_ms": 400,
+        },
+        "initial_prompt": "민원 상담 통화",
+        "hotwords": "민원, 접수번호",
+        "condition_on_previous_text": False,
     }
     assert result.duration_ms == 4000
     assert [utterance.text for utterance in result.utterances] == [
