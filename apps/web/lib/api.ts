@@ -25,6 +25,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
     throw new ApiError(message, response.status);
   }
+  if (response.status === 204) {
+    return undefined as T;
+  }
   return (await response.json()) as T;
 }
 
@@ -62,6 +65,10 @@ export async function getCall(callId: string): Promise<CallDetail> {
 
 export async function getCallStatus(callId: string): Promise<CallStatusResponse> {
   return request<CallStatusResponse>(`/api/v1/calls/${callId}/status`);
+}
+
+export async function deleteCall(callId: string): Promise<void> {
+  return request<void>(`/api/v1/calls/${callId}`, { method: "DELETE" });
 }
 
 export function getAudioUrl(callId: string): string {

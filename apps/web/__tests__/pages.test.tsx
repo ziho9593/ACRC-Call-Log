@@ -1,10 +1,11 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CallDetailPage from "@/app/calls/[id]/page";
 import HomePage from "@/app/page";
 
 const apiMock = vi.hoisted(() => ({
+  deleteCall: vi.fn(),
   getAudioUrl: vi.fn(() => "http://localhost:8000/api/v1/calls/call-1/audio"),
   getCall: vi.fn(),
   getCallStatus: vi.fn(),
@@ -21,6 +22,7 @@ vi.mock("next/navigation", () => ({
 describe("pages", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
   });
 
   afterEach(() => {
@@ -124,5 +126,62 @@ describe("pages", () => {
     const submit = screen.getByRole("button", { name: "업로드 및 분석 시작" });
     await userEvent.click(submit);
     expect(screen.getByText("업로드할 녹취 파일을 선택해 주세요.")).toBeInTheDocument();
+  });
+
+  it("처리 중인 업로드를 자동 갱신하고 완료를 알린다", async () => {
+    vi.useFakeTimers();
+    const uploaded = {
+      id: "call-1",
+      originalFilename: "processing.mp3",
+      mimeType: "audio/mpeg",
+      fileSizeBytes: 1000,
+      status: "PROCESSING" as const,
+      errorMessage: null,
+      durationMs: null,
+      oneLineSummary: null,
+      createdAt: "2026-07-26T04:30:00Z",
+      updatedAt: "2026-07-26T04:30:00Z"
+    };
+    apiMock.listCalls
+      .mockResolvedValueOnce([uploaded])
+      .mockResolvedValueOnce([
+        { ...uploaded, status: "COMPLETED", oneLineSummary: "분석 완료" }
+      ]);
+    render(<HomePage />);
+    await act(async () => undefined);
+    expect(screen.getByText("처리 중")).toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    expect(screen.getByText("완료")).toBeInTheDocument();
+    expect(screen.getByText("분석 완료")).toBeInTheDocument();
+  });
+
+  it("확인 후 기존 통화 기록을 삭제한다", async () => {
+    const call = {
+      id: "call-1",
+      originalFilename: "delete-me.mp3",
+      mimeType: "audio/mpeg",
+      fileSizeBytes: 1000,
+      status: "COMPLETED" as const,
+      errorMessage: null,
+      durationMs: 1000,
+      oneLineSummary: "삭제 대상",
+      createdAt: "2026-07-26T04:30:00Z",
+      updatedAt: "2026-07-26T04:31:00Z"
+    };
+    apiMock.listCalls.mockResolvedValue([call]);
+    apiMock.deleteCall.mockResolvedValue(undefined);
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<HomePage />);
+
+    const deleteButton = await screen.findByRole("button", { name: "delete-me.mp3 삭제" });
+    await userEvent.click(deleteButton);
+
+    await waitFor(() => expect(apiMock.deleteCall).toHaveBeenCalledWith("call-1"));
+    expect(screen.queryByText("delete-me.mp3")).not.toBeInTheDocument();
+    expect(screen.getByText("통화 기록을 삭제했습니다.")).toBeInTheDocument();
   });
 });

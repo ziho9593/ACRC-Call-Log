@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { validateAudioFile } from "@/lib/api";
+import { describe, expect, it, vi } from "vitest";
+import { deleteCall, validateAudioFile } from "@/lib/api";
 
 describe("validateAudioFile", () => {
   it("업로드 파일이 없으면 오류를 반환한다", () => {
@@ -14,6 +14,21 @@ describe("validateAudioFile", () => {
   it("지원하는 음성 파일은 통과한다", () => {
     const file = new File(["audio"], "call.mp3", { type: "audio/mpeg" });
     expect(validateAudioFile(file)).toBeNull();
+  });
+
+  it("통화 삭제 요청을 보낸다", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, {
+        status: 204
+      })
+    );
+
+    await deleteCall("call-1");
+
+    expect(fetchMock).toHaveBeenCalledWith("http://localhost:8000/api/v1/calls/call-1", {
+      method: "DELETE"
+    });
+    fetchMock.mockRestore();
   });
 });
 
