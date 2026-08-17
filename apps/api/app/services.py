@@ -5,7 +5,8 @@ from pathlib import Path
 
 from . import db
 from .config import get_settings
-from .providers import get_analysis_provider, get_stt_provider
+from .providers import get_analysis_provider, get_diarization_provider, get_stt_provider
+from .providers.pyannote_diarization import assign_speakers
 
 
 def probe_duration_ms(audio_path: Path) -> int | None:
@@ -111,6 +112,18 @@ def process_call(call_id: str) -> None:
             settings.whisper_compression_ratio_threshold,
             settings.whisper_hallucination_silence_threshold,
         ).transcribe(stt_path)
+        diarization_provider = get_diarization_provider(
+            settings.diarization_provider,
+            settings.diarization_model_path,
+            settings.diarization_device,
+            settings.diarization_min_speakers,
+            settings.diarization_max_speakers,
+        )
+        if diarization_provider is not None:
+            transcript = assign_speakers(
+                transcript,
+                diarization_provider.diarize(stt_path),
+            )
         probed_duration = probe_duration_ms(audio_path)
         if probed_duration:
             transcript = type(transcript)(probed_duration, transcript.utterances)

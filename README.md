@@ -168,7 +168,31 @@ ANALYSIS_PROVIDER=ollama
 docker compose up --build
 ```
 
-Provider는 로컬 모델만 허용하므로 실행 중 모델을 자동으로 다운로드하거나 외부 STT API를 호출하지 않습니다. 전사 전에 임시 16kHz mono WAV를 만들고 고역·저역 필터, 노이즈 감소, 음량 정규화를 적용하며 전사가 끝나면 즉시 삭제합니다. 전처리가 실패하면 원본 오디오로 계속 전사합니다. 기본 prompt와 hotwords는 환각 방지를 위해 비워 두며, 명백한 자막·광고 안내 환각은 저장 전에 제외합니다. Whisper 자체에는 화자 분리 기능이 없어서 실제 전사 구간의 화자는 모두 `화자`로 저장됩니다.
+Provider는 로컬 모델만 허용하므로 실행 중 모델을 자동으로 다운로드하거나 외부 STT API를 호출하지 않습니다. 전사 전에 임시 16kHz mono WAV를 만들고 고역·저역 필터, 노이즈 감소, 음량 정규화를 적용하며 전사가 끝나면 즉시 삭제합니다. 전처리가 실패하면 원본 오디오로 계속 전사합니다. 기본 prompt와 hotwords는 환각 방지를 위해 비워 두며, 명백한 자막·광고 안내 환각은 저장 전에 제외합니다.
+
+## 로컬 화자분리 사용 방법
+
+화자분리는 로컬 `pyannote/speaker-diarization-community-1` 모델을 사용합니다. 먼저 [모델 페이지](https://huggingface.co/pyannote/speaker-diarization-community-1)에서 사용 조건에 동의하고 read 권한 Hugging Face 토큰을 준비합니다. 아래 다운로드 단계에서만 토큰이 필요하며 API 실행 중에는 외부 서비스나 토큰을 사용하지 않습니다.
+
+```bash
+cd apps/api
+. .venv/Scripts/activate
+export HF_TOKEN=발급받은_토큰
+python scripts/download_diarization_model.py
+```
+
+API 실행 전에 다음 설정을 추가합니다. 일반적인 상담 통화처럼 화자가 정확히 두 명이면 최소/최대 화자 수를 모두 `2`로 두는 것이 안정적입니다. 화자 수가 일정하지 않은 파일에는 두 값을 비우면 자동 추정합니다.
+
+```bash
+export DIARIZATION_PROVIDER=pyannote
+export DIARIZATION_MODEL_PATH=../../storage/models/pyannote-speaker-diarization-community-1
+export DIARIZATION_DEVICE=cpu
+export DIARIZATION_MIN_SPEAKERS=2
+export DIARIZATION_MAX_SPEAKERS=2
+python -m uvicorn app.main:app --reload
+```
+
+Docker Compose에서는 `DIARIZATION_MODEL_PATH=/models/pyannote-speaker-diarization-community-1`을 사용합니다. 화자분리 결과는 Whisper 전사 구간과 시간상 가장 많이 겹치는 화자를 기준으로 `화자 1`, `화자 2`처럼 저장합니다. `community-1`의 exclusive diarization 결과가 있으면 이를 우선 사용합니다.
 
 `ANALYSIS_PROVIDER=local`은 외부 LLM 없이 실제 전사문에서 대표 문장, 주요 키워드, 최대 3개의 구간별 요약을 추출합니다. 생성형 요약이 아닌 추출형 PoC이므로 결과 문장은 원문 전사 구간을 그대로 사용합니다.
 

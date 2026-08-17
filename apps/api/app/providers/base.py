@@ -20,6 +20,13 @@ class TranscriptResult:
 
 
 @dataclass(frozen=True)
+class SpeakerTurn:
+    start_ms: int
+    end_ms: int
+    speaker: str
+
+
+@dataclass(frozen=True)
 class AnalysisSection:
     sequence: int
     title: str
@@ -39,6 +46,10 @@ class AnalysisResult:
 
 class SpeechToTextProvider(Protocol):
     def transcribe(self, audio_path: str) -> TranscriptResult: ...
+
+
+class SpeakerDiarizationProvider(Protocol):
+    def diarize(self, audio_path: str) -> list[SpeakerTurn]: ...
 
 
 class CallAnalysisProvider(Protocol):

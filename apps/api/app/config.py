@@ -23,6 +23,11 @@ class Settings:
     whisper_log_prob_threshold: float
     whisper_compression_ratio_threshold: float
     whisper_hallucination_silence_threshold: float
+    diarization_provider: str
+    diarization_model_path: Path
+    diarization_device: str
+    diarization_min_speakers: int | None
+    diarization_max_speakers: int | None
     analysis_provider: str
     ollama_base_url: str
     ollama_model: str
@@ -41,6 +46,8 @@ def get_settings() -> Settings:
         "API_CORS_ORIGINS",
         "http://localhost:3000,http://127.0.0.1:3000",
     )
+    min_speakers = os.getenv("DIARIZATION_MIN_SPEAKERS", "").strip()
+    max_speakers = os.getenv("DIARIZATION_MAX_SPEAKERS", "").strip()
     return Settings(
         stt_provider=os.getenv("STT_PROVIDER", "mock"),
         whisper_model_path=Path(os.getenv("WHISPER_MODEL_PATH", "storage/models/whisper-large-v3")),
@@ -66,6 +73,16 @@ def get_settings() -> Settings:
         whisper_hallucination_silence_threshold=float(
             os.getenv("WHISPER_HALLUCINATION_SILENCE_THRESHOLD", "1.0")
         ),
+        diarization_provider=os.getenv("DIARIZATION_PROVIDER", "none"),
+        diarization_model_path=Path(
+            os.getenv(
+                "DIARIZATION_MODEL_PATH",
+                "storage/models/pyannote-speaker-diarization-community-1",
+            )
+        ),
+        diarization_device=os.getenv("DIARIZATION_DEVICE", "cpu"),
+        diarization_min_speakers=int(min_speakers) if min_speakers else None,
+        diarization_max_speakers=int(max_speakers) if max_speakers else None,
         analysis_provider=os.getenv("ANALYSIS_PROVIDER", "mock"),
         ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
         ollama_model=os.getenv("OLLAMA_MODEL", "qwen3.5:4b"),

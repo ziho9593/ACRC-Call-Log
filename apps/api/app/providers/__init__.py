@@ -3,11 +3,12 @@ from __future__ import annotations
 from functools import cache
 from pathlib import Path
 
-from .base import CallAnalysisProvider, SpeechToTextProvider
+from .base import CallAnalysisProvider, SpeakerDiarizationProvider, SpeechToTextProvider
 from .faster_whisper import FasterWhisperSpeechToTextProvider
 from .local_analysis import LocalExtractiveCallAnalysisProvider
 from .mock import MockCallAnalysisProvider, MockSpeechToTextProvider
 from .ollama_analysis import OllamaCallAnalysisProvider
+from .pyannote_diarization import PyannoteSpeakerDiarizationProvider
 
 
 @cache
@@ -74,3 +75,25 @@ def get_analysis_provider(
             max_input_chars=max_input_chars,
         )
     raise ValueError(f"지원하지 않는 ANALYSIS_PROVIDER입니다: {name}")
+
+
+@cache
+def get_diarization_provider(
+    name: str,
+    model_path: Path | None = None,
+    device: str = "cpu",
+    min_speakers: int | None = None,
+    max_speakers: int | None = None,
+) -> SpeakerDiarizationProvider | None:
+    if name == "none":
+        return None
+    if name == "pyannote":
+        if model_path is None:
+            raise ValueError("pyannote Provider에는 모델 경로가 필요합니다.")
+        return PyannoteSpeakerDiarizationProvider(
+            model_path=model_path,
+            device=device,
+            min_speakers=min_speakers,
+            max_speakers=max_speakers,
+        )
+    raise ValueError(f"지원하지 않는 DIARIZATION_PROVIDER입니다: {name}")
