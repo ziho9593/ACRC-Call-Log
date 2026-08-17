@@ -40,7 +40,12 @@ def upload_sample(client: TestClient, filename: str = "sample-call.mp3") -> dict
 def test_health_api(client: TestClient) -> None:
     response = client.get("/api/v1/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {
+        "status": "ok",
+        "sttProvider": "mock",
+        "diarizationProvider": "none",
+        "analysisProvider": "mock",
+    }
 
 
 @pytest.mark.parametrize("origin", ["http://localhost:3000", "http://127.0.0.1:3000"])

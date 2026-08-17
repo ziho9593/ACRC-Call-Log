@@ -48,7 +48,7 @@ def get_settings() -> Settings:
     )
     min_speakers = os.getenv("DIARIZATION_MIN_SPEAKERS", "").strip()
     max_speakers = os.getenv("DIARIZATION_MAX_SPEAKERS", "").strip()
-    return Settings(
+    settings = Settings(
         stt_provider=os.getenv("STT_PROVIDER", "mock"),
         whisper_model_path=Path(os.getenv("WHISPER_MODEL_PATH", "storage/models/whisper-large-v3")),
         whisper_device=os.getenv("WHISPER_DEVICE", "cpu"),
@@ -95,3 +95,8 @@ def get_settings() -> Settings:
         max_upload_bytes=int(os.getenv("MAX_UPLOAD_BYTES", str(100 * 1024 * 1024))),
         cors_origins=[origin.strip() for origin in origins.split(",") if origin.strip()],
     )
+    if settings.stt_provider == "mock" and settings.diarization_provider != "none":
+        raise ValueError(
+            "화자분리를 사용할 때는 STT_PROVIDER=faster-whisper를 함께 설정해야 합니다."
+        )
+    return settings

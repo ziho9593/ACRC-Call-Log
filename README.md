@@ -183,6 +183,18 @@ python scripts/download_diarization_model.py
 
 API 실행 전에 다음 설정을 추가합니다. 일반적인 상담 통화처럼 화자가 정확히 두 명이면 최소/최대 화자 수를 모두 `2`로 두는 것이 안정적입니다. 화자 수가 일정하지 않은 파일에는 두 값을 비우면 자동 추정합니다.
 
+로컬 전체 구성을 한 번에 실행하려면 다음 명령을 사용합니다. 이 스크립트는 faster-whisper, pyannote 화자분리, Ollama 설정을 함께 적용하므로 mock Provider로 되돌아가는 실수를 방지합니다.
+
+```bash
+bash apps/api/run-local.sh
+```
+
+PowerShell에서는 다음 명령을 사용합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File apps/api/run-local.ps1
+```
+
 ```bash
 export DIARIZATION_PROVIDER=pyannote
 export DIARIZATION_MODEL_PATH=../../storage/models/pyannote-speaker-diarization-community-1

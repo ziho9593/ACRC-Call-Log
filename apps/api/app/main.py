@@ -45,7 +45,13 @@ app.add_middleware(
 
 @app.get("/api/v1/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    active_settings = get_settings()
+    return {
+        "status": "ok",
+        "sttProvider": active_settings.stt_provider,
+        "diarizationProvider": active_settings.diarization_provider,
+        "analysisProvider": active_settings.analysis_provider,
+    }
 
 
 @app.post("/api/v1/calls", status_code=201)
