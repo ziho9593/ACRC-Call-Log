@@ -15,14 +15,11 @@ from .config import get_settings
 from .services import process_call
 
 ALLOWED_EXTENSIONS = {".mp3", ".wav", ".m4a", ".mp4"}
-ALLOWED_MIME_TYPES = {
-    "audio/mpeg",
-    "audio/mp3",
-    "audio/wav",
-    "audio/x-wav",
-    "audio/mp4",
-    "audio/m4a",
-    "video/mp4",
+ALLOWED_MIME_TYPES_BY_EXTENSION = {
+    ".mp3": {"audio/mpeg", "audio/mp3"},
+    ".wav": {"audio/wav", "audio/x-wav"},
+    ".m4a": {"audio/mp4", "audio/m4a"},
+    ".mp4": {"audio/mp4", "video/mp4"},
 }
 
 
@@ -66,7 +63,7 @@ def upload_call(file: UploadFile, background_tasks: BackgroundTasks) -> dict[str
         raise HTTPException(status_code=400, detail="지원하지 않는 파일 형식입니다.")
 
     mime_type = file.content_type or "application/octet-stream"
-    if mime_type not in ALLOWED_MIME_TYPES:
+    if mime_type not in ALLOWED_MIME_TYPES_BY_EXTENSION[extension]:
         raise HTTPException(status_code=400, detail="지원하지 않는 MIME 타입입니다.")
 
     settings = get_settings()
@@ -84,6 +81,8 @@ def upload_call(file: UploadFile, background_tasks: BackgroundTasks) -> dict[str
                         detail="파일 크기가 최대 허용 용량을 초과했습니다.",
                     )
                 output.write(chunk)
+        if total_size == 0:
+            raise HTTPException(status_code=400, detail="빈 파일은 업로드할 수 없습니다.")
     except HTTPException:
         storage_path.unlink(missing_ok=True)
         raise
@@ -150,12 +149,19 @@ def get_call_audio(call_id: str) -> FileResponse:
     response_model=None,
 )
 def delete_call(call_id: str) -> Response:
-    row = db.delete_call_record(call_id)
+    row = db.get_call_record(call_id)
     if row is None:
         raise HTTPException(status_code=404, detail="통화 기록을 찾을 수 없습니다.")
     storage_path = Path(row["storage_path"])
-    storage_path.unlink(missing_ok=True)
     processed_dir = get_settings().processed_dir / call_id
-    if processed_dir.exists():
-        shutil.rmtree(processed_dir)
+    try:
+        if processed_dir.exists():
+            shutil.rmtree(processed_dir)
+        storage_path.unlink(missing_ok=True)
+    except OSError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="통화 파일 삭제 중 오류가 발생했습니다.",
+        ) from exc
+    db.delete_call_record(call_id)
     return Response(status_code=204)

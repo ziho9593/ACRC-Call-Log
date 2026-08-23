@@ -12,8 +12,8 @@ from app.main import app
 
 
 @pytest.fixture()
-def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
-    runtime_dir = Path("test-runtime") / str(uuid.uuid4())
+def client(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> TestClient:
+    runtime_dir = tmp_path / str(uuid.uuid4())
     runtime_dir.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv("DATABASE_PATH", str(runtime_dir / "test.db"))
     monkeypatch.setenv("UPLOAD_DIR", str(runtime_dir / "uploads"))
@@ -80,6 +80,26 @@ def test_reject_file_over_max_size(client: TestClient, monkeypatch: pytest.Monke
     assert response.json()["detail"] == "파일 크기가 최대 허용 용량을 초과했습니다."
 
 
+def test_reject_empty_file(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/calls",
+        files={"file": ("empty.mp3", b"", "audio/mpeg")},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "빈 파일은 업로드할 수 없습니다."
+
+
+def test_reject_mime_type_mismatched_with_extension(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/calls",
+        files={"file": ("sample.mp3", b"fake audio bytes", "video/mp4")},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "지원하지 않는 MIME 타입입니다."
+
+
 def test_list_calls(client: TestClient) -> None:
     upload_sample(client)
     response = client.get("/api/v1/calls")
@@ -124,3 +144,27 @@ def test_delete_call_record(client: TestClient) -> None:
     response = client.delete(f"/api/v1/calls/{created['id']}")
     assert response.status_code == 204
     assert client.get(f"/api/v1/calls/{created['id']}").status_code == 404
+
+
+def test_delete_keeps_record_when_file_cleanup_fails(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    created = upload_sample(client)
+    row = db.get_call_record(str(created["id"]))
+    assert row is not None
+    storage_path = Path(row["storage_path"])
+    original_unlink = Path.unlink
+
+    def fail_target_unlink(path: Path, missing_ok: bool = False) -> None:
+        if path == storage_path:
+            raise OSError("simulated cleanup failure")
+        original_unlink(path, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", fail_target_unlink)
+
+    response = client.delete(f"/api/v1/calls/{created['id']}")
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "통화 파일 삭제 중 오류가 발생했습니다."
+    assert db.get_call_record(str(created["id"])) is not None

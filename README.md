@@ -81,10 +81,21 @@ Backend:
 
 ```bash
 cd apps/api
-python -m venv .venv
-. .venv/Scripts/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+python -m venv .venv  # .venv가 이미 있으면 생략
+.\.venv\Scripts\activate
+python -m pip install -r requirements.txt
+python -m uvicorn app.main:app --reload
+```
+
+이미 환경 세팅이 끝난 PC에서는 다음만 실행하면 됩니다.
+
+```powershell
+cd apps/api
+.\.venv\Scripts\activate
+python -m uvicorn app.main:app --reload
+```
+
+`.venv\Scripts\python.exe` 권한 오류가 나면 활성화된 터미널이나 실행 중인 API 서버를 종료한 뒤 다시 시도합니다. 기존 `.venv`가 정상이라면 `python -m venv .venv`를 반복 실행하지 않아도 됩니다.
 ```
 
 Frontend:

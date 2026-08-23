@@ -15,6 +15,7 @@ dist/
 storage/uploads/*
 storage/processed/*
 storage/models/*
+/apps/api/storage/
 !storage/uploads/.gitkeep
 !storage/processed/.gitkeep
 !storage/models/.gitkeep

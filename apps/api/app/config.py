@@ -4,6 +4,15 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+
+def resolve_project_path(value: str) -> Path:
+    path = Path(value).expanduser()
+    if path.is_absolute():
+        return path
+    return (PROJECT_ROOT / path).resolve()
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -89,9 +98,9 @@ def get_settings() -> Settings:
         ollama_timeout_seconds=float(os.getenv("OLLAMA_TIMEOUT_SECONDS", "180")),
         ollama_context_window=int(os.getenv("OLLAMA_CONTEXT_WINDOW", "32768")),
         ollama_max_input_chars=int(os.getenv("OLLAMA_MAX_INPUT_CHARS", "40000")),
-        database_path=Path(os.getenv("DATABASE_PATH", "storage/acrc_call_log.db")),
-        upload_dir=Path(os.getenv("UPLOAD_DIR", "storage/uploads")),
-        processed_dir=Path(os.getenv("PROCESSED_DIR", "storage/processed")),
+        database_path=resolve_project_path(os.getenv("DATABASE_PATH", "storage/acrc_call_log.db")),
+        upload_dir=resolve_project_path(os.getenv("UPLOAD_DIR", "storage/uploads")),
+        processed_dir=resolve_project_path(os.getenv("PROCESSED_DIR", "storage/processed")),
         max_upload_bytes=int(os.getenv("MAX_UPLOAD_BYTES", str(100 * 1024 * 1024))),
         cors_origins=[origin.strip() for origin in origins.split(",") if origin.strip()],
     )
