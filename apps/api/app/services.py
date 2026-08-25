@@ -6,6 +6,7 @@ from pathlib import Path
 from . import db
 from .config import get_settings
 from .providers import get_analysis_provider, get_diarization_provider, get_stt_provider
+from .providers.gemini_stt import GeminiSTTError
 from .providers.pyannote_diarization import assign_speakers
 
 
@@ -148,6 +149,8 @@ def process_call(call_id: str) -> None:
             gemini_max_input_chars=settings.gemini_max_input_chars,
         ).analyze(transcript)
         db.save_analysis(call_id, transcript, analysis)
+    except GeminiSTTError as exc:
+        db.update_status(call_id, "FAILED", str(exc))
     except Exception:
         db.update_status(call_id, "FAILED", "분석 처리 중 오류가 발생했습니다.")
     finally:

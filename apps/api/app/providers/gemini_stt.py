@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import mimetypes
 import time
 from pathlib import Path
@@ -24,6 +25,10 @@ class GeminiTranscriptResponse(BaseModel):
     utterances: list[GeminiTranscriptUtterance]
 
 
+class GeminiSTTError(RuntimeError):
+    """An error message safe to expose without audio, transcript, or credentials."""
+
+
 class GeminiSpeechToTextProvider(SpeechToTextProvider):
     def __init__(
         self,
@@ -33,6 +38,7 @@ class GeminiSpeechToTextProvider(SpeechToTextProvider):
         timeout_seconds: float = 180,
         language: str = "ko",
         client: httpx.Client | None = None,
+        inline_max_bytes: int = 14 * 1024 * 1024,
     ) -> None:
         if not api_key.strip():
             raise ValueError("Gemini STT Provider requires GEMINI_API_KEY.")
@@ -40,6 +46,7 @@ class GeminiSpeechToTextProvider(SpeechToTextProvider):
         self._model = model
         self._language = language
         self._timeout_seconds = timeout_seconds
+        self._inline_max_bytes = inline_max_bytes
         self._client = client or httpx.Client(
             base_url=base_url.rstrip("/"),
             timeout=timeout_seconds,
@@ -51,11 +58,20 @@ class GeminiSpeechToTextProvider(SpeechToTextProvider):
             raise FileNotFoundError(path)
 
         mime_type = mimetypes.guess_type(path.name)[0] or "audio/mpeg"
+        if path.stat().st_size <= self._inline_max_bytes:
+            encoded_audio = base64.b64encode(path.read_bytes()).decode("ascii")
+            response = self._generate(
+                {"inlineData": {"mimeType": mime_type, "data": encoded_audio}}
+            )
+            return self._to_transcript(response)
+
         uploaded = self._upload(path, mime_type)
         file_name = str(uploaded["name"])
         try:
             uploaded = self._wait_until_active(uploaded)
-            response = self._generate(str(uploaded["uri"]), mime_type)
+            response = self._generate(
+                {"fileData": {"mimeType": mime_type, "fileUri": str(uploaded["uri"])}}
+            )
             return self._to_transcript(response)
         finally:
             self._delete(file_name)
@@ -73,7 +89,7 @@ class GeminiSpeechToTextProvider(SpeechToTextProvider):
             },
             json={"file": {"displayName": path.name}},
         )
-        start_response.raise_for_status()
+        self._raise_for_status(start_response, "Gemini 음성 업로드 시작 실패")
         upload_url = start_response.headers.get("x-goog-upload-url")
         if not upload_url:
             raise ValueError("Gemini Files API did not return an upload URL.")
@@ -88,7 +104,7 @@ class GeminiSpeechToTextProvider(SpeechToTextProvider):
                 },
                 content=audio_file,
             )
-        upload_response.raise_for_status()
+        self._raise_for_status(upload_response, "Gemini 음성 업로드 실패")
         uploaded = upload_response.json().get("file")
         if not isinstance(uploaded, dict) or not uploaded.get("name") or not uploaded.get("uri"):
             raise ValueError("Gemini Files API returned invalid file metadata.")
@@ -103,14 +119,14 @@ class GeminiSpeechToTextProvider(SpeechToTextProvider):
                 f"/v1beta/{uploaded['name']}",
                 headers={"x-goog-api-key": self._api_key},
             )
-            response.raise_for_status()
+            self._raise_for_status(response, "Gemini 음성 처리 상태 확인 실패")
             uploaded = response.json()
             state = str(uploaded.get("state", ""))
         if state != "ACTIVE":
             raise ValueError(f"Gemini audio file is not ready: {state or 'UNKNOWN'}")
         return uploaded
 
-    def _generate(self, file_uri: str, mime_type: str) -> GeminiTranscriptResponse:
+    def _generate(self, audio_part: dict[str, object]) -> GeminiTranscriptResponse:
         model_name = quote(self._model, safe="")
         response = self._client.post(
             f"/v1beta/models/{model_name}:generateContent",
@@ -129,7 +145,7 @@ class GeminiSpeechToTextProvider(SpeechToTextProvider):
                                     "and 화자 2 when names are unknown."
                                 )
                             },
-                            {"fileData": {"mimeType": mime_type, "fileUri": file_uri}},
+                            audio_part,
                         ],
                     }
                 ],
@@ -142,10 +158,20 @@ class GeminiSpeechToTextProvider(SpeechToTextProvider):
                 },
             },
         )
-        response.raise_for_status()
-        parts = response.json()["candidates"][0]["content"]["parts"]
-        content = "".join(part.get("text", "") for part in parts)
-        return GeminiTranscriptResponse.model_validate_json(content)
+        self._raise_for_status(response, "Gemini 음성 전사 요청 실패")
+        try:
+            parts = response.json()["candidates"][0]["content"]["parts"]
+            content = "".join(part.get("text", "") for part in parts)
+            return GeminiTranscriptResponse.model_validate_json(content)
+        except (KeyError, IndexError, TypeError, ValueError):
+            raise GeminiSTTError("Gemini가 올바른 전사 결과를 반환하지 않았습니다.") from None
+
+    @staticmethod
+    def _raise_for_status(response: httpx.Response, message: str) -> None:
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError:
+            raise GeminiSTTError(f"{message} (HTTP {response.status_code})") from None
 
     def _delete(self, file_name: str) -> None:
         try:
@@ -175,6 +201,6 @@ class GeminiSpeechToTextProvider(SpeechToTextProvider):
                 )
             )
         if not utterances:
-            raise ValueError("Gemini returned an empty transcript.")
+            raise GeminiSTTError("Gemini가 빈 전사 결과를 반환했습니다.")
         duration_ms = max(response.duration_ms, max(item.end_ms for item in utterances))
         return TranscriptResult(duration_ms=duration_ms, utterances=utterances)

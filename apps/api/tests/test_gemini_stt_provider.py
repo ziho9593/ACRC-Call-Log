@@ -1,12 +1,57 @@
 from __future__ import annotations
 
+import base64
 import json
 from pathlib import Path
 
 import httpx
 import pytest
 
-from app.providers.gemini_stt import GeminiSpeechToTextProvider
+from app.providers.gemini_stt import GeminiSpeechToTextProvider, GeminiSTTError
+
+
+def test_gemini_stt_sends_small_audio_inline(tmp_path: Path) -> None:
+    audio_path = tmp_path / "small.mp3"
+    audio_path.write_bytes(b"small audio")
+    captured_body: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal captured_body
+        assert request.url.path == "/v1beta/models/gemini-test:generateContent"
+        captured_body = json.loads(request.content)
+        content = {
+            "duration_ms": 1000,
+            "utterances": [
+                {
+                    "speaker": "화자 1",
+                    "start_ms": 0,
+                    "end_ms": 1000,
+                    "text": "실제 음성입니다.",
+                }
+            ],
+        }
+        return httpx.Response(
+            200,
+            json={"candidates": [{"content": {"parts": [{"text": json.dumps(content)}]}}]},
+        )
+
+    client = httpx.Client(
+        base_url="https://gemini.test",
+        transport=httpx.MockTransport(handler),
+    )
+    provider = GeminiSpeechToTextProvider(
+        api_key="test-api-key",
+        model="gemini-test",
+        client=client,
+    )
+
+    result = provider.transcribe(str(audio_path))
+
+    parts = captured_body["contents"][0]["parts"]  # type: ignore[index]
+    inline_data = parts[1]["inlineData"]
+    assert inline_data["mimeType"] == "audio/mpeg"
+    assert base64.b64decode(inline_data["data"]) == b"small audio"
+    assert result.utterances[0].text == "실제 음성입니다."
 
 
 def test_gemini_stt_uploads_audio_and_maps_transcript(tmp_path: Path) -> None:
@@ -72,6 +117,7 @@ def test_gemini_stt_uploads_audio_and_maps_transcript(tmp_path: Path) -> None:
         model="gemini-test",
         base_url="https://gemini.test",
         client=client,
+        inline_max_bytes=0,
     )
 
     result = provider.transcribe(str(audio_path))
@@ -94,3 +140,25 @@ def test_gemini_stt_uploads_audio_and_maps_transcript(tmp_path: Path) -> None:
 def test_gemini_stt_requires_api_key() -> None:
     with pytest.raises(ValueError, match="GEMINI_API_KEY"):
         GeminiSpeechToTextProvider(api_key="")
+
+
+def test_gemini_stt_exposes_only_safe_http_error(tmp_path: Path) -> None:
+    audio_path = tmp_path / "small.mp3"
+    audio_path.write_bytes(b"audio")
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(429, json={"error": {"message": "sensitive provider details"}})
+
+    provider = GeminiSpeechToTextProvider(
+        api_key="test-api-key",
+        client=httpx.Client(
+            base_url="https://gemini.test",
+            transport=httpx.MockTransport(handler),
+        ),
+    )
+
+    with pytest.raises(GeminiSTTError, match=r"HTTP 429") as error:
+        provider.transcribe(str(audio_path))
+
+    assert "sensitive provider details" not in str(error.value)
+    assert "test-api-key" not in str(error.value)
