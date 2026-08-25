@@ -32,9 +32,9 @@ analysis_provider="${ANALYSIS_PROVIDER:-mock}"
 if [ -n "${GEMINI_API_KEY:-}" ]; then
   analysis_provider="${ANALYSIS_PROVIDER:-gemini}"
 fi
-wait_for_url "FastAPI" "http://127.0.0.1:8000/api/v1/health" "$runtime_dir/api.log"
 
 if ! curl --silent --fail http://127.0.0.1:8000/api/v1/health >/dev/null 2>&1; then
+  : >"$runtime_dir/api.log"
   (
     cd "$workspace_dir/apps/api"
     STT_PROVIDER="${STT_PROVIDER:-mock}" \
@@ -44,9 +44,10 @@ if ! curl --silent --fail http://127.0.0.1:8000/api/v1/health >/dev/null 2>&1; t
     echo $! >"$runtime_dir/api.pid"
   )
 fi
-wait_for_url "Next.js" "http://127.0.0.1:3000" "$runtime_dir/web.log"
+wait_for_url "FastAPI" "http://127.0.0.1:8000/api/v1/health" "$runtime_dir/api.log"
 
 if ! curl --silent --fail http://127.0.0.1:3000 >/dev/null 2>&1; then
+  : >"$runtime_dir/web.log"
   (
     cd "$workspace_dir/apps/web"
     API_INTERNAL_BASE_URL=http://127.0.0.1:8000 \
@@ -55,6 +56,7 @@ if ! curl --silent --fail http://127.0.0.1:3000 >/dev/null 2>&1; then
     echo $! >"$runtime_dir/web.pid"
   )
 fi
+wait_for_url "Next.js" "http://127.0.0.1:3000" "$runtime_dir/web.log"
 
 if [ -n "${CODESPACE_NAME:-}" ] && [ -n "${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-}" ]; then
   echo "ACRC-Call-Log: https://${CODESPACE_NAME}-3000.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
