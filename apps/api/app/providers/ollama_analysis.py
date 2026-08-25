@@ -99,24 +99,13 @@ def _split_utterances(
     return chunks
 
 
-class OllamaCallAnalysisProvider(CallAnalysisProvider):
+class StructuredCallAnalysisProvider(CallAnalysisProvider):
     def __init__(
         self,
-        base_url: str,
-        model: str,
-        timeout_seconds: float = 180,
-        context_window: int = 32768,
         max_input_chars: int = 40000,
-        client: httpx.Client | None = None,
         fallback: CallAnalysisProvider | None = None,
     ) -> None:
-        self._model = model
-        self._context_window = context_window
         self._max_input_chars = max(1000, max_input_chars)
-        self._client = client or httpx.Client(
-            base_url=base_url.rstrip("/"),
-            timeout=timeout_seconds,
-        )
         self._fallback = fallback or LocalExtractiveCallAnalysisProvider()
 
     def _chat(
@@ -125,26 +114,7 @@ class OllamaCallAnalysisProvider(CallAnalysisProvider):
         system_prompt: str,
         user_prompt: str,
     ) -> ResponseModel:
-        response = self._client.post(
-            "/api/chat",
-            json={
-                "model": self._model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                "stream": False,
-                "think": False,
-                "format": response_model.model_json_schema(),
-                "options": {
-                    "temperature": 0,
-                    "num_ctx": self._context_window,
-                },
-            },
-        )
-        response.raise_for_status()
-        content = response.json()["message"]["content"]
-        return response_model.model_validate_json(content)
+        raise NotImplementedError
 
     def _analyze_chunk(self, utterances: list[TranscriptUtterance]) -> AnalysisResult:
         model_result = self._chat(
@@ -231,3 +201,50 @@ class OllamaCallAnalysisProvider(CallAnalysisProvider):
             return self._combine_chunks(chunk_results)
         except Exception:
             return self._fallback.analyze(transcript)
+
+
+class OllamaCallAnalysisProvider(StructuredCallAnalysisProvider):
+    def __init__(
+        self,
+        base_url: str,
+        model: str,
+        timeout_seconds: float = 180,
+        context_window: int = 32768,
+        max_input_chars: int = 40000,
+        client: httpx.Client | None = None,
+        fallback: CallAnalysisProvider | None = None,
+    ) -> None:
+        super().__init__(max_input_chars=max_input_chars, fallback=fallback)
+        self._model = model
+        self._context_window = context_window
+        self._client = client or httpx.Client(
+            base_url=base_url.rstrip("/"),
+            timeout=timeout_seconds,
+        )
+
+    def _chat(
+        self,
+        response_model: type[ResponseModel],
+        system_prompt: str,
+        user_prompt: str,
+    ) -> ResponseModel:
+        response = self._client.post(
+            "/api/chat",
+            json={
+                "model": self._model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                "stream": False,
+                "think": False,
+                "format": response_model.model_json_schema(),
+                "options": {
+                    "temperature": 0,
+                    "num_ctx": self._context_window,
+                },
+            },
+        )
+        response.raise_for_status()
+        content = response.json()["message"]["content"]
+        return response_model.model_validate_json(content)

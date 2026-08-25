@@ -1,6 +1,6 @@
 # ACRC-Call-Log
 
-사내 통화 녹취 분석 서비스의 PoC입니다. 사용자가 녹취 파일을 업로드하면 백엔드 background task가 Mock 전사와 분석을 수행하고, 프론트엔드에서 타임스탬프 전사문, 전체 요약, 주요 키워드, 구간별 요약, 오디오 재생을 확인할 수 있습니다.
+사내 통화 녹취 분석 서비스의 PoC입니다. 사용자가 녹취 파일을 업로드하면 백엔드 background task가 선택한 Provider로 전사와 분석을 수행하고, 프론트엔드에서 타임스탬프 전사문, 전체 요약, 주요 키워드, 구간별 요약, 오디오 재생을 확인할 수 있습니다.
 
 ## 기술 스택
 
@@ -16,6 +16,8 @@
 
 ```text
 ACRC-Call-Log/
+├─ .devcontainer/
+├─ .github/workflows/
 ├─ apps/
 │  ├─ api/
 │  └─ web/
@@ -58,6 +60,11 @@ ACRC-Call-Log/
 - `OLLAMA_TIMEOUT_SECONDS`: 모델 분석 제한 시간, 기본값 180초
 - `OLLAMA_CONTEXT_WINDOW`: 모델 컨텍스트 크기, 기본값 32768
 - `OLLAMA_MAX_INPUT_CHARS`: 한 번에 분석할 최대 전사문 길이, 기본값 40000자
+- `GEMINI_API_KEY`: Gemini 분석용 서버 비밀 키. 브라우저와 Git 저장소에 노출하지 않음
+- `GEMINI_BASE_URL`: Gemini API 주소
+- `GEMINI_MODEL`: Gemini 분석 모델, 기본값 `gemini-2.5-flash`
+- `GEMINI_TIMEOUT_SECONDS`: Gemini 분석 제한 시간, 기본값 180초
+- `GEMINI_MAX_INPUT_CHARS`: 한 번에 Gemini로 분석할 최대 전사문 길이, 기본값 40000자
 - `DATABASE_PATH`: SQLite 파일 경로
 - `UPLOAD_DIR`: 업로드 파일 저장 경로
 - `PROCESSED_DIR`: 처리 산출물 저장 경로
@@ -96,7 +103,6 @@ python -m uvicorn app.main:app --reload
 ```
 
 `.venv\Scripts\python.exe` 권한 오류가 나면 활성화된 터미널이나 실행 중인 API 서버를 종료한 뒤 다시 시도합니다. 기존 `.venv`가 정상이라면 `python -m venv .venv`를 반복 실행하지 않아도 됩니다.
-```
 
 Frontend:
 
@@ -139,6 +145,7 @@ docker compose config
 ```bash
 cd apps/api
 . .venv/Scripts/activate
+python -m pip install -r requirements-local-ai.txt
 python -c "from faster_whisper.utils import download_model; download_model('large-v3', output_dir='../../storage/models/whisper-large-v3')"
 ```
 
@@ -163,6 +170,7 @@ Docker Compose에서는 프로젝트 루트의 `.env`를 다음과 같이 설정
 
 ```dotenv
 STT_PROVIDER=faster-whisper
+API_REQUIREMENTS_FILE=requirements-local-ai.txt
 WHISPER_MODEL_PATH=/models/whisper-large-v3
 WHISPER_DEVICE=cpu
 WHISPER_COMPUTE_TYPE=int8
@@ -238,6 +246,46 @@ python -m uvicorn app.main:app --reload
 
 Ollama Provider는 전사문을 로컬 Ollama API에만 전달하고 JSON Schema로 결과 형식을 검증합니다. 긴 전사문은 자동으로 나누어 분석하며, Ollama 연결이나 응답 검증이 실패하면 기존 `local` 추출형 분석으로 전환합니다. 전사 전문과 모델 응답은 로그에 남기지 않습니다.
 
+## Gemini 분석 사용 방법
+
+Gemini는 분석 Provider로만 사용하며 음성 전사는 기존 Mock 또는 faster-whisper Provider가 담당합니다. API 키는 FastAPI 서버 환경 변수에만 설정합니다.
+
+PowerShell:
+
+```powershell
+$env:ANALYSIS_PROVIDER = "gemini"
+$env:GEMINI_API_KEY = "발급받은_키"
+$env:GEMINI_MODEL = "gemini-2.5-flash"
+python -m uvicorn app.main:app --reload
+```
+
+Bash:
+
+```bash
+export ANALYSIS_PROVIDER=gemini
+export GEMINI_API_KEY=발급받은_키
+export GEMINI_MODEL=gemini-2.5-flash
+python -m uvicorn app.main:app --reload
+```
+
+Gemini Provider는 전사문을 Gemini `generateContent` API에 전달하고 JSON Schema 응답을 Pydantic으로 다시 검증합니다. 긴 전사문은 나누어 분석하며, API 연결 또는 응답 검증에 실패하면 `local` 추출형 분석으로 전환합니다. API 키, 전사 전문, 모델 응답은 애플리케이션 로그에 남기지 않습니다.
+
+## GitHub Actions와 Codespaces PoC
+
+GitHub Actions는 웹서비스를 계속 실행하지 않고, push와 pull request마다 backend와 frontend의 formatting, lint, test, build를 자동 검증합니다. 결과는 GitHub 저장소의 `Actions` 탭에서 확인합니다.
+
+임시 웹 데모는 GitHub Codespaces에서 실행합니다. 저장소의 `Settings > Secrets and variables > Codespaces`에서 `GEMINI_API_KEY` Secret을 만들고 이 저장소에 접근을 허용합니다. Secret이 없으면 Mock 분석으로 실행되므로 화면과 업로드 흐름은 그대로 확인할 수 있습니다.
+
+1. GitHub 저장소의 `Code > Codespaces`에서 `Create codespace on main`을 선택합니다.
+2. 최초 의존성 설치가 끝나면 API와 Web이 자동으로 시작됩니다.
+3. 브라우저가 자동으로 열리지 않으면 Codespace의 `PORTS` 탭에서 `ACRC-Call-Log` 3000 포트를 엽니다.
+4. 다른 사람에게 잠시 공유할 때만 3000 포트의 `Port Visibility`를 `Public` 또는 `Organization`으로 변경합니다.
+5. 데모가 끝나면 Codespace를 중지하거나 삭제합니다.
+
+프론트엔드는 같은 origin의 `/api` 경로를 통해 FastAPI를 호출하므로 8000 포트를 공개할 필요가 없습니다. Codespaces의 로컬 SQLite와 업로드 파일은 정식 운영 데이터로 간주하지 않으며, 공개 포트 데모에는 실제 민감 녹취 대신 테스트 파일만 사용합니다.
+
+Codespace에 `GEMINI_API_KEY`가 있으면 기본 분석 Provider는 `gemini`, 없으면 `mock`입니다. 음성 전사는 Codespaces의 빠른 시작을 위해 항상 기본 `mock`으로 시작합니다. faster-whisper와 pyannote는 `requirements-local-ai.txt`를 별도로 설치해야 하며 일반 Codespace의 자원과 시작 시간에는 적합하지 않을 수 있습니다.
+
 ## Mock Provider 사용 방법
 
 기본 설정인 `STT_PROVIDER=mock`, `ANALYSIS_PROVIDER=mock` 상태에서는 외부 API 키 없이 업로드부터 분석 완료까지 동작합니다. 업로드된 파일의 실제 음성 내용은 읽지 않고, 한국어 상담 통화 샘플 전사와 요약을 반환합니다. 파일명이 `fail`로 시작하면 PoC 테스트를 위해 실패 상태가 저장됩니다.
@@ -254,6 +302,8 @@ Ollama Provider는 전사문을 로컬 Ollama API에만 전달하고 JSON Schema
 
 - 사용자 인증과 권한 관리가 없습니다.
 - Mock Provider는 실제 음성 내용을 전사하지 않습니다. faster-whisper Provider를 선택하면 로컬 모델로 전사할 수 있습니다.
+- Codespaces 데모 URL과 프로세스는 Codespace가 중지되면 사용할 수 없습니다.
+- Codespaces의 SQLite와 업로드 파일은 영구 운영 저장소가 아닙니다.
 - 고급 화자 분리, 전사문 편집, 전체 텍스트 검색, 통계 대시보드는 없습니다.
 - 장기 보관 정책, 감사 로그, 자동 개인정보 마스킹은 구현하지 않았습니다.
 

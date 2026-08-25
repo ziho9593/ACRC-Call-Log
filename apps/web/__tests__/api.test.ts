@@ -25,7 +25,7 @@ describe("validateAudioFile", () => {
 
     await deleteCall("call-1");
 
-    expect(fetchMock).toHaveBeenCalledWith("http://localhost:8000/api/v1/calls/call-1", {
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/calls/call-1", {
       method: "DELETE"
     });
     fetchMock.mockRestore();

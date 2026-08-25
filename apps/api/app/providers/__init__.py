@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .base import CallAnalysisProvider, SpeakerDiarizationProvider, SpeechToTextProvider
 from .faster_whisper import FasterWhisperSpeechToTextProvider
+from .gemini_analysis import GeminiCallAnalysisProvider
 from .local_analysis import LocalExtractiveCallAnalysisProvider
 from .mock import MockCallAnalysisProvider, MockSpeechToTextProvider
 from .ollama_analysis import OllamaCallAnalysisProvider
@@ -61,6 +62,11 @@ def get_analysis_provider(
     timeout_seconds: float = 180,
     context_window: int = 32768,
     max_input_chars: int = 40000,
+    gemini_api_key: str = "",
+    gemini_base_url: str = "https://generativelanguage.googleapis.com",
+    gemini_model: str = "gemini-2.5-flash",
+    gemini_timeout_seconds: float = 180,
+    gemini_max_input_chars: int = 40000,
 ) -> CallAnalysisProvider:
     if name == "mock":
         return MockCallAnalysisProvider()
@@ -73,6 +79,14 @@ def get_analysis_provider(
             timeout_seconds=timeout_seconds,
             context_window=context_window,
             max_input_chars=max_input_chars,
+        )
+    if name == "gemini":
+        return GeminiCallAnalysisProvider(
+            api_key=gemini_api_key,
+            base_url=gemini_base_url,
+            model=gemini_model,
+            timeout_seconds=gemini_timeout_seconds,
+            max_input_chars=gemini_max_input_chars,
         )
     raise ValueError(f"지원하지 않는 ANALYSIS_PROVIDER입니다: {name}")
 

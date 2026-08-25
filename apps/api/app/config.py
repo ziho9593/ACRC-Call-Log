@@ -43,6 +43,11 @@ class Settings:
     ollama_timeout_seconds: float
     ollama_context_window: int
     ollama_max_input_chars: int
+    gemini_api_key: str
+    gemini_base_url: str
+    gemini_model: str
+    gemini_timeout_seconds: float
+    gemini_max_input_chars: int
     database_path: Path
     upload_dir: Path
     processed_dir: Path
@@ -98,6 +103,14 @@ def get_settings() -> Settings:
         ollama_timeout_seconds=float(os.getenv("OLLAMA_TIMEOUT_SECONDS", "180")),
         ollama_context_window=int(os.getenv("OLLAMA_CONTEXT_WINDOW", "32768")),
         ollama_max_input_chars=int(os.getenv("OLLAMA_MAX_INPUT_CHARS", "40000")),
+        gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
+        gemini_base_url=os.getenv(
+            "GEMINI_BASE_URL",
+            "https://generativelanguage.googleapis.com",
+        ),
+        gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        gemini_timeout_seconds=float(os.getenv("GEMINI_TIMEOUT_SECONDS", "180")),
+        gemini_max_input_chars=int(os.getenv("GEMINI_MAX_INPUT_CHARS", "40000")),
         database_path=resolve_project_path(os.getenv("DATABASE_PATH", "storage/acrc_call_log.db")),
         upload_dir=resolve_project_path(os.getenv("UPLOAD_DIR", "storage/uploads")),
         processed_dir=resolve_project_path(os.getenv("PROCESSED_DIR", "storage/processed")),

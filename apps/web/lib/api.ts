@@ -1,6 +1,6 @@
 import type { CallDetail, CallStatusResponse, CallSummary } from "@/types/call";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = [".mp3", ".wav", ".m4a", ".mp4"];
 

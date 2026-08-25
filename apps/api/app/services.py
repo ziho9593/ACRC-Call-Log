@@ -24,6 +24,8 @@ def probe_duration_ms(audio_path: Path) -> int | None:
             ],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=10,
             check=True,
         )
@@ -129,12 +131,17 @@ def process_call(call_id: str) -> None:
             transcript = type(transcript)(probed_duration, transcript.utterances)
 
         analysis = get_analysis_provider(
-            settings.analysis_provider,
-            settings.ollama_base_url,
-            settings.ollama_model,
-            settings.ollama_timeout_seconds,
-            settings.ollama_context_window,
-            settings.ollama_max_input_chars,
+            name=settings.analysis_provider,
+            base_url=settings.ollama_base_url,
+            model=settings.ollama_model,
+            timeout_seconds=settings.ollama_timeout_seconds,
+            context_window=settings.ollama_context_window,
+            max_input_chars=settings.ollama_max_input_chars,
+            gemini_api_key=settings.gemini_api_key,
+            gemini_base_url=settings.gemini_base_url,
+            gemini_model=settings.gemini_model,
+            gemini_timeout_seconds=settings.gemini_timeout_seconds,
+            gemini_max_input_chars=settings.gemini_max_input_chars,
         ).analyze(transcript)
         db.save_analysis(call_id, transcript, analysis)
     except Exception:

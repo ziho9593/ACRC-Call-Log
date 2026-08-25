@@ -1,0 +1,29 @@
+{
+  "name": "ACRC-Call-Log PoC",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    }
+  },
+  "forwardPorts": [3000, 8000],
+  "portsAttributes": {
+    "3000": {
+      "label": "ACRC-Call-Log",
+      "onAutoForward": "openBrowser"
+    },
+    "8000": {
+      "label": "FastAPI",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "python -m pip install -r apps/api/requirements.txt && npm --prefix apps/web ci",
+  "postStartCommand": "bash .devcontainer/start.sh",
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "storage": "16gb"
+  }
+}

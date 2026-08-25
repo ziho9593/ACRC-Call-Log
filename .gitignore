@@ -12,6 +12,7 @@ node_modules/
 .next/
 coverage/
 dist/
+.codespaces-runtime/
 storage/uploads/*
 storage/processed/*
 storage/models/*

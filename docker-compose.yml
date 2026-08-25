@@ -2,6 +2,8 @@ services:
   api:
     build:
       context: ./apps/api
+      args:
+        REQUIREMENTS_FILE: ${API_REQUIREMENTS_FILE:-requirements.txt}
     environment:
       STT_PROVIDER: ${STT_PROVIDER:-mock}
       WHISPER_MODEL_PATH: ${WHISPER_MODEL_PATH:-/models/whisper-large-v3}
@@ -31,6 +33,11 @@ services:
       OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-180}
       OLLAMA_CONTEXT_WINDOW: ${OLLAMA_CONTEXT_WINDOW:-32768}
       OLLAMA_MAX_INPUT_CHARS: ${OLLAMA_MAX_INPUT_CHARS:-40000}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      GEMINI_TIMEOUT_SECONDS: ${GEMINI_TIMEOUT_SECONDS:-180}
+      GEMINI_MAX_INPUT_CHARS: ${GEMINI_MAX_INPUT_CHARS:-40000}
       DATABASE_PATH: /data/acrc_call_log.db
       UPLOAD_DIR: /data/uploads
       PROCESSED_DIR: /data/processed
@@ -46,7 +53,8 @@ services:
     build:
       context: ./apps/web
     environment:
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
+      API_INTERNAL_BASE_URL: http://api:8000
     ports:
       - "3000:3000"
     depends_on:
