@@ -276,6 +276,8 @@ GitHub Actions는 웹서비스를 계속 실행하지 않고, push와 pull reque
 
 임시 웹 데모는 GitHub Codespaces에서 실행합니다. 저장소의 `Settings > Secrets and variables > Codespaces`에서 `GEMINI_API_KEY` Secret을 만들고 이 저장소에 접근을 허용합니다. Secret이 없으면 Mock 분석으로 실행되므로 화면과 업로드 흐름은 그대로 확인할 수 있습니다.
 
+Codespaces는 Node와 Python이 포함된 공식 Universal 이미지를 사용합니다. 별도 Feature나 커스텀 이미지 빌드 없이 `postCreateCommand`에서 프로젝트 의존성만 설치하므로, devcontainer 빌드 실패 시 복구 모드로 전환되는 지점을 최소화합니다.
+
 1. GitHub 저장소의 `Code > Codespaces`에서 `Create codespace on main`을 선택합니다.
 2. 최초 의존성 설치가 끝나면 API와 Web이 자동으로 시작됩니다.
 3. 브라우저가 자동으로 열리지 않으면 Codespace의 `PORTS` 탭에서 `ACRC-Call-Log` 3000 포트를 엽니다.
@@ -283,6 +285,17 @@ GitHub Actions는 웹서비스를 계속 실행하지 않고, push와 pull reque
 5. 데모가 끝나면 Codespace를 중지하거나 삭제합니다.
 
 프론트엔드는 같은 origin의 `/api` 경로를 통해 FastAPI를 호출하므로 8000 포트를 공개할 필요가 없습니다. Codespaces의 로컬 SQLite와 업로드 파일은 정식 운영 데이터로 간주하지 않으며, 공개 포트 데모에는 실제 민감 녹취 대신 테스트 파일만 사용합니다.
+
+Actions의 CI 성공 표시는 배포 완료가 아니라 코드 검증 완료를 의미합니다. 공유 URL은 Codespace가 실행 중이고 3000 포트가 `Public`인 동안에만 열립니다. Codespace를 다시 시작하거나 포트를 제거했다가 추가하면 공개 설정이 `Private`으로 돌아갈 수 있으므로 `PORTS` 탭에서 다시 확인합니다.
+
+화면이 열리지 않으면 Codespace 터미널에서 시작 스크립트를 다시 실행합니다. 스크립트는 API와 Web의 기동을 최대 60초 동안 확인하고 실패 시 최근 로그를 출력합니다.
+
+```bash
+bash .devcontainer/start.sh
+curl --fail http://127.0.0.1:8000/api/v1/health
+curl --fail http://127.0.0.1:3000
+tail -n 80 .codespaces-runtime/api.log .codespaces-runtime/web.log
+```
 
 Codespace에 `GEMINI_API_KEY`가 있으면 기본 분석 Provider는 `gemini`, 없으면 `mock`입니다. 음성 전사는 Codespaces의 빠른 시작을 위해 항상 기본 `mock`으로 시작합니다. faster-whisper와 pyannote는 `requirements-local-ai.txt`를 별도로 설치해야 하며 일반 Codespace의 자원과 시작 시간에는 적합하지 않을 수 있습니다.
 

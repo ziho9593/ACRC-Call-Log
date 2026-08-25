@@ -5,10 +5,32 @@ workspace_dir="$(cd "$(dirname "$0")/.." && pwd)"
 runtime_dir="$workspace_dir/.codespaces-runtime"
 mkdir -p "$runtime_dir"
 
+wait_for_url() {
+  name="$1"
+  url="$2"
+  log_file="$3"
+  attempts=0
+  while [ "$attempts" -lt 60 ]; do
+    if curl --silent --fail "$url" >/dev/null 2>&1; then
+      return 0
+    fi
+    attempts=$((attempts + 1))
+    sleep 1
+  done
+
+  echo "$name did not start: $url" >&2
+  if [ -f "$log_file" ]; then
+    echo "----- $name log -----" >&2
+    tail -n 80 "$log_file" >&2
+  fi
+  return 1
+}
+
 analysis_provider="${ANALYSIS_PROVIDER:-mock}"
 if [ -n "${GEMINI_API_KEY:-}" ]; then
   analysis_provider="${ANALYSIS_PROVIDER:-gemini}"
 fi
+wait_for_url "FastAPI" "http://127.0.0.1:8000/api/v1/health" "$runtime_dir/api.log"
 
 if ! curl --silent --fail http://127.0.0.1:8000/api/v1/health >/dev/null 2>&1; then
   (
@@ -20,6 +42,7 @@ if ! curl --silent --fail http://127.0.0.1:8000/api/v1/health >/dev/null 2>&1; t
     echo $! >"$runtime_dir/api.pid"
   )
 fi
+wait_for_url "Next.js" "http://127.0.0.1:3000" "$runtime_dir/web.log"
 
 if ! curl --silent --fail http://127.0.0.1:3000 >/dev/null 2>&1; then
   (
@@ -37,3 +60,5 @@ else
   echo "ACRC-Call-Log: http://localhost:3000"
 fi
 echo "Analysis Provider: $analysis_provider"
+echo "Share: PORTS > 3000 > Port Visibility > Public"
+echo "Logs: tail -f $runtime_dir/api.log $runtime_dir/web.log"

@@ -9,6 +9,13 @@ permissions:
   contents: read
 
 jobs:
+  codespaces-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -m json.tool .devcontainer/devcontainer.json >/dev/null
+      - run: bash -n .devcontainer/start.sh
+
   backend:
     runs-on: ubuntu-latest
     defaults:
