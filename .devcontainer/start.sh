@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -eu
+# Lifecycle debugging must never echo Codespaces secret values.
+set +x
 
 workspace_dir="$(cd "$(dirname "$0")/.." && pwd)"
 runtime_dir="$workspace_dir/.codespaces-runtime"
