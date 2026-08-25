@@ -6,6 +6,7 @@ from pathlib import Path
 from .base import CallAnalysisProvider, SpeakerDiarizationProvider, SpeechToTextProvider
 from .faster_whisper import FasterWhisperSpeechToTextProvider
 from .gemini_analysis import GeminiCallAnalysisProvider
+from .gemini_stt import GeminiSpeechToTextProvider
 from .local_analysis import LocalExtractiveCallAnalysisProvider
 from .mock import MockCallAnalysisProvider, MockSpeechToTextProvider
 from .ollama_analysis import OllamaCallAnalysisProvider
@@ -29,6 +30,10 @@ def get_stt_provider(
     log_prob_threshold: float = -0.8,
     compression_ratio_threshold: float = 2.2,
     hallucination_silence_threshold: float = 1.0,
+    gemini_api_key: str = "",
+    gemini_base_url: str = "https://generativelanguage.googleapis.com",
+    gemini_model: str = "gemini-2.5-flash",
+    gemini_timeout_seconds: float = 180,
 ) -> SpeechToTextProvider:
     if name == "mock":
         return MockSpeechToTextProvider()
@@ -50,6 +55,14 @@ def get_stt_provider(
             log_prob_threshold=log_prob_threshold,
             compression_ratio_threshold=compression_ratio_threshold,
             hallucination_silence_threshold=hallucination_silence_threshold,
+        )
+    if name == "gemini":
+        return GeminiSpeechToTextProvider(
+            api_key=gemini_api_key,
+            base_url=gemini_base_url,
+            model=gemini_model,
+            timeout_seconds=gemini_timeout_seconds,
+            language=language,
         )
     raise ValueError(f"지원하지 않는 STT_PROVIDER입니다: {name}")
 

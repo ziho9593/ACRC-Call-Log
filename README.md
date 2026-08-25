@@ -297,7 +297,7 @@ curl --fail http://127.0.0.1:3000
 tail -n 80 .codespaces-runtime/api.log .codespaces-runtime/web.log
 ```
 
-Codespace에 `GEMINI_API_KEY`가 있으면 기본 분석 Provider는 `gemini`, 없으면 `mock`입니다. 음성 전사는 Codespaces의 빠른 시작을 위해 항상 기본 `mock`으로 시작합니다. faster-whisper와 pyannote는 `requirements-local-ai.txt`를 별도로 설치해야 하며 일반 Codespace의 자원과 시작 시간에는 적합하지 않을 수 있습니다.
+Codespaces 공유 데모는 `GEMINI_API_KEY`를 필수로 사용하며 기본 `STT_PROVIDER`와 `ANALYSIS_PROVIDER`가 모두 `gemini`입니다. 업로드된 음성 파일은 Gemini Files API로 전송되어 실제 전사되고, Gemini에 업로드된 파일은 전사 요청 후 삭제됩니다. 키가 없으면 고정 샘플로 대체하지 않고 시작이 실패합니다. faster-whisper와 pyannote는 `requirements-local-ai.txt`를 별도로 설치해야 하며 일반 Codespace의 자원과 시작 시간에는 적합하지 않을 수 있습니다.
 
 ## Mock Provider 사용 방법
 

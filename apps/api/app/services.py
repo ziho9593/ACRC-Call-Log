@@ -113,6 +113,10 @@ def process_call(call_id: str) -> None:
             settings.whisper_log_prob_threshold,
             settings.whisper_compression_ratio_threshold,
             settings.whisper_hallucination_silence_threshold,
+            settings.gemini_api_key,
+            settings.gemini_base_url,
+            settings.gemini_model,
+            settings.gemini_timeout_seconds,
         ).transcribe(stt_path)
         diarization_provider = get_diarization_provider(
             settings.diarization_provider,

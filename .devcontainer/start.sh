@@ -28,16 +28,19 @@ wait_for_url() {
   return 1
 }
 
-analysis_provider="${ANALYSIS_PROVIDER:-mock}"
-if [ -n "${GEMINI_API_KEY:-}" ]; then
-  analysis_provider="${ANALYSIS_PROVIDER:-gemini}"
+stt_provider="${STT_PROVIDER:-gemini}"
+analysis_provider="${ANALYSIS_PROVIDER:-gemini}"
+if { [ "$stt_provider" = "gemini" ] || [ "$analysis_provider" = "gemini" ]; } && \
+  [ -z "${GEMINI_API_KEY:-}" ]; then
+  echo "GEMINI_API_KEY is required for the Codespaces demo." >&2
+  exit 1
 fi
 
 if ! curl --silent --fail http://127.0.0.1:8000/api/v1/health >/dev/null 2>&1; then
   : >"$runtime_dir/api.log"
   (
     cd "$workspace_dir/apps/api"
-    STT_PROVIDER="${STT_PROVIDER:-mock}" \
+    STT_PROVIDER="$stt_provider" \
       ANALYSIS_PROVIDER="$analysis_provider" \
       nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 \
       >"$runtime_dir/api.log" 2>&1 &
@@ -63,6 +66,7 @@ if [ -n "${CODESPACE_NAME:-}" ] && [ -n "${GITHUB_CODESPACES_PORT_FORWARDING_DOM
 else
   echo "ACRC-Call-Log: http://localhost:3000"
 fi
+echo "STT Provider: $stt_provider"
 echo "Analysis Provider: $analysis_provider"
 echo "Share: PORTS > 3000 > Port Visibility > Public"
 echo "Logs: tail -f $runtime_dir/api.log $runtime_dir/web.log"
